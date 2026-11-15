@@ -84,6 +84,7 @@ Levels live in `src/levels.js`. Each one is an array of strings, one string per 
 | `K` | Key. Collect every key before the goal opens. Collected keys follow you. |
 | `O` | Button. Pressed for good by you or a block, and opens every door. |
 | `D` | Door. Solid like a wall until a button is pressed. |
+| `L` | Lamp. Decoration only, with fireflies around its glow. It hangs from a wall above it, stands on a wall below it, or floats. |
 | `P` | Player start. |
 | `.` | Empty. |
 
@@ -110,6 +111,21 @@ A level can also have a second layer, `zones`, laid over the map to add conditio
 | --- | --- |
 | `x` | No-bubble zone. Clicking here doesn't start a bubble. Drawn as red stripes. |
 | `.` | No condition. |
+
+A level can also have a `props` layer, another grid the same shape as the map. Props are decoration only: they don't replace the tile underneath and nothing collides with them. Lamps and cobwebs can live here (a `L` or `W` on the map still works too).
+
+| Prop character | Meaning |
+| --- | --- |
+| `L` | Lamp. |
+| `W` | Cobweb. |
+| `.` | Nothing. |
+
+```js
+props: [
+  "....................",
+  "....L...............",
+],
+```
 
 The object form can also have a `dialog`: a list of pages shown in a conversation box when the level is entered. It isn't shown again on restarts. The text types out with a speaking sound, and `Enter`, `Space` or a click finishes the page or moves to the next one.
 

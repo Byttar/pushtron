@@ -16,13 +16,17 @@ const TOOLS = [
   { char: "D", label: "DOOR", key: "7" },
   { char: "P", label: "PLAYER", key: "8" },
   { char: EMPTY, label: "ERASE", key: "9" },
+  { char: "L", label: "LAMP", key: "l", layer: "props" },
+  { char: "W", label: "COBWEB", key: "w", layer: "props" },
   { char: "x", label: "NO-BUBBLE ZONE", key: "x", layer: "zones" },
 ];
 const MAP_CHARS = TOOLS.filter((t) => !t.layer).map((t) => t.char);
 const ZONE_CHARS = TOOLS.filter((t) => t.layer === "zones").map((t) => t.char);
+const PROP_CHARS = TOOLS.filter((t) => t.layer === "props").map((t) => t.char);
 
 let grid = [];
 let zones = []; // same size as grid
+let props = []; // decoration only; painted over the map without replacing it
 let tool = "#";
 let painting = null; // { layer, char } while the pointer is held, or null
 let hoverCell = null;
@@ -61,6 +65,7 @@ function setup() {
 function newGrid(cols, rows) {
   grid = Array.from({ length: rows }, () => Array(cols).fill(EMPTY));
   zones = Array.from({ length: rows }, () => Array(cols).fill(EMPTY));
+  props = Array.from({ length: rows }, () => Array(cols).fill(EMPTY));
   fitCanvas();
 }
 
@@ -69,6 +74,7 @@ function resizeGrid(cols, rows) {
   const resized = (layer) => Array.from({ length: rows }, (_, r) => Array.from({ length: cols }, (_, c) => layer[r]?.[c] ?? EMPTY));
   grid = resized(grid);
   zones = resized(zones);
+  props = resized(props);
   fitCanvas();
   updateOutput();
 }
@@ -101,32 +107,29 @@ function paintAt(e) {
   const cell = cellAt(e);
   if (!cell) return;
   const { layer, char } = painting;
-  const target = layer === "zones" ? zones : grid;
+  const target = layer === "zones" ? zones : layer === "props" ? props : grid;
   if (target[cell.row][cell.col] === char) return;
   // A level has a single player start.
   if (char === "P") grid = grid.map((row) => row.map((c) => (c === "P" ? EMPTY : c)));
-  (layer === "zones" ? zones : grid)[cell.row][cell.col] = char;
+  const cells = layer === "zones" ? zones : layer === "props" ? props : grid;
+  cells[cell.row][cell.col] = char;
   updateOutput();
 }
 
 // ---------- Text in and out ----------
 
 const hasZones = () => zones.some((row) => row.some((char) => char !== EMPTY));
+const hasProps = () => props.some((row) => row.some((char) => char !== EMPTY));
 
-// A plain array of rows, or { map, zones } once any zone is painted.
+// A plain array of rows, or { map, zones, props } once a zone or a prop is painted.
 function levelText() {
   const rows = (layer, indent) => layer.map((row) => `${indent}"${row.join("")}",`);
-  if (!hasZones()) return ["      [", ...rows(grid, "        "), "      ],"].join("\n");
-  return [
-    "      {",
-    "        map: [",
-    ...rows(grid, "          "),
-    "        ],",
-    "        zones: [",
-    ...rows(zones, "          "),
-    "        ],",
-    "      },",
-  ].join("\n");
+  if (!hasZones() && !hasProps()) return ["      [", ...rows(grid, "        "), "      ],"].join("\n");
+  const lines = ["      {", "        map: [", ...rows(grid, "          "), "        ],"];
+  if (hasZones()) lines.push("        zones: [", ...rows(zones, "          "), "        ],");
+  if (hasProps()) lines.push("        props: [", ...rows(props, "          "), "        ],");
+  lines.push("      },");
+  return lines.join("\n");
 }
 
 const quotedRows = (text) => [...text.matchAll(/["'`]([^"'`\n]*)["'`]/g)].map((m) => m[1]);
@@ -134,15 +137,30 @@ const quotedRows = (text) => [...text.matchAll(/["'`]([^"'`\n]*)["'`]/g)].map((m
 // Accepts a level copied from levels.js, in either format: every quoted string is one row,
 // and rows after "zones:" belong to the zones layer.
 function parseLevel(text) {
-  const [mapText, zonesText = ""] = text.split(/zones\s*:/);
+  const propsMatch = text.match(/props\s*:\s*\[([\s\S]*?)\]/);
+  const stripped = text.replace(/props\s*:\s*\[[\s\S]*?\]\s*,?/, "");
+  const [mapText, zonesText = ""] = stripped.split(/zones\s*:/);
   const mapRows = quotedRows(mapText);
   if (mapRows.length === 0) return null;
   const cols = Math.max(...mapRows.map((r) => r.length));
   if (cols === 0) return null;
   const zoneRows = quotedRows(zonesText);
+  const propRows = propsMatch ? quotedRows(propsMatch[1]) : [];
   const toGrid = (source, allowed) =>
     mapRows.map((_, r) => Array.from({ length: cols }, (_, c) => (allowed.includes(source[r]?.[c]) ? source[r][c] : EMPTY)));
-  return { grid: toGrid(mapRows, MAP_CHARS), zones: toGrid(zoneRows, ZONE_CHARS) };
+  const propsGrid = toGrid(propRows, PROP_CHARS);
+  // Older levels put lamps and cobwebs on the map. Move those onto the props layer.
+  const mapGrid = mapRows.map((row, r) =>
+    Array.from({ length: cols }, (_, c) => {
+      const char = row[c];
+      if (PROP_CHARS.includes(char)) {
+        if (propsGrid[r][c] === EMPTY) propsGrid[r][c] = char;
+        return EMPTY;
+      }
+      return MAP_CHARS.includes(char) ? char : EMPTY;
+    }),
+  );
+  return { grid: mapGrid, zones: toGrid(zoneRows, ZONE_CHARS), props: propsGrid };
 }
 
 function updateOutput() {
@@ -163,6 +181,7 @@ function buildPalette() {
     const button = document.createElement("button");
     button.textContent = `${key.toUpperCase()} ${char} ${label}`;
     if (layer === "zones") button.classList.add("zone");
+    if (layer === "props") button.classList.add("prop");
     button.dataset.char = char;
     button.addEventListener("click", () => selectTool(char));
     palette.appendChild(button);
@@ -214,7 +233,7 @@ function bindControls() {
       document.getElementById("warnings").textContent = "! NO ROWS FOUND IN THE TEXT";
       return;
     }
-    ({ grid, zones } = parsed);
+    ({ grid, zones, props } = parsed);
     fitCanvas();
     updateOutput();
   });
@@ -234,9 +253,9 @@ function draw() {
 
   Phosphor.noGlow();
   zones.forEach((row, r) => row.forEach((char, c) => char === "x" && drawNoBubbleZone(c * EDITOR_CELL, r * EDITOR_CELL, 1)));
-
   Phosphor.glow(6);
   grid.forEach((row, r) => row.forEach((char, c) => drawCell(char, c * EDITOR_CELL, r * EDITOR_CELL, 255)));
+  props.forEach((row, r) => row.forEach((char, c) => char !== EMPTY && drawCell(char, c * EDITOR_CELL, r * EDITOR_CELL, 255)));
 
   if (hoverCell) {
     const x = hoverCell.col * EDITOR_CELL;
@@ -339,6 +358,25 @@ function drawCell(char, x, y, alpha) {
       rect(x + 2, y + 2, s - 4, s - 4);
       Phosphor.stroke(170 * (alpha / 255), 1);
       for (const bar of [0.3, 0.5, 0.7]) line(x + s * bar, y + 4, x + s * bar, y + s - 4);
+      break;
+    case "W":
+      noFill();
+      Phosphor.stroke(140 * (alpha / 255), 1);
+      line(x + 2, y + 2, x + s * 0.75, y + 4);
+      line(x + 2, y + 2, x + 4, y + s * 0.75);
+      line(x + 2, y + 2, x + s * 0.7, y + s * 0.7);
+      break;
+    case "L":
+      noFill();
+      Phosphor.stroke(170 * (alpha / 255), 1);
+      line(x + s / 2, y, x + s / 2, y + s * 0.3);
+      Phosphor.stroke(alpha, 2);
+      line(x + s * 0.35, y + s * 0.3, x + s * 0.65, y + s * 0.3);
+      line(x + s * 0.35, y + s * 0.3, x + s * 0.2, y + s * 0.55);
+      line(x + s * 0.65, y + s * 0.3, x + s * 0.8, y + s * 0.55);
+      noStroke();
+      Phosphor.fill(alpha);
+      circle(x + s / 2, y + s * 0.55, s * 0.18);
       break;
     case "P":
       noFill();

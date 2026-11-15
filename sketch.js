@@ -13,14 +13,18 @@ async function setup() {
     return;
   }
 
-  const [sprite, hangSprite, font] = await Promise.all([
+  const [sprite, hangSprite, cobwebSprite, ...rest] = await Promise.all([
     loadOptional(loadImage, CONFIG.player.sprite.path),
     loadOptional(loadImage, CONFIG.player.sprite.hangPath),
+    loadOptional(loadImage, CONFIG.cobweb.path),
+    ...CONFIG.background.paths.map((path) => loadOptional(loadImage, path)),
     loadOptional(loadFont, THEME.fontPath),
   ]);
+  const backgroundImages = rest.slice(0, CONFIG.background.paths.length);
+  const font = rest[CONFIG.background.paths.length];
 
   game = new Game(DIFFICULTIES);
-  renderer = new Renderer(sprite, hangSprite);
+  renderer = new Renderer(sprite, hangSprite, cobwebSprite, backgroundImages);
 
   const size = Layout.canvasSize();
   createCanvas(size.width, size.height);

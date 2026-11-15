@@ -22,6 +22,7 @@ class Game {
 
     this.difficulty = null;
     this.levelIndex = 0;
+    this.levelVisit = 0; // increments when a level is entered, not when it is restarted
     this.level = null;
     this.world = null;
 
@@ -72,6 +73,7 @@ class Game {
     this.deathBurst = null;
     this.input.consumeJump();
     // The dialog plays when a level is entered, not when it's restarted after a death or R.
+    if (withTransition) this.levelVisit++;
     this.dialog.close();
     this.pendingDialog = withTransition ? this.level.dialog : [];
   }

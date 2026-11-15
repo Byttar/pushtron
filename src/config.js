@@ -125,4 +125,18 @@ const CONFIG = Object.freeze({
   fire: Object.freeze({
     hitInset: 3, // px of forgiveness before fire counts as touching
   }),
+
+  background: Object.freeze({
+    paths: Object.freeze(["assets/background.jpg", "assets/background-2.jpg"]), // one is picked when a level is entered
+  }),
+
+  cobweb: Object.freeze({
+    path: "assets/cobweb.gif",
+  }),
+
+  lamp: Object.freeze({
+    flies: 4, // fireflies around each lamp
+    flyRange: CELL * 1.4, // px; how far they wander from the light
+    lightRadius: CELL * 3, // px reach of the glow on the background
+  }),
 });

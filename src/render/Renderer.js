@@ -3,9 +3,13 @@ class Renderer {
   static FIRE_RESOLUTION = 6; // simulation cells per tile side
   static FIRE_CORE = [210, 255, 180]; // the hottest cells glow almost white
 
-  constructor(playerSprite, hangSprite) {
+  constructor(playerSprite, hangSprite, cobwebSprite, backgroundImages) {
     this.playerSprite = playerSprite; // animated GIF, or null if it failed to load
     this.hangSprite = hangSprite ?? playerSprite; // shown while hanging from a ceiling
+    this.cobwebSprite = cobwebSprite ?? null;
+    this.backgroundImages = (backgroundImages ?? []).filter(Boolean);
+    this.backgroundPick = null;
+    this.backgroundVisit = -1;
     this.messageOverlay = new MessageOverlay();
     this.menuRenderer = new MenuRenderer();
     this.loadingScreen = new LoadingScreen();
@@ -34,11 +38,14 @@ class Renderer {
     const dead = game.state === Game.State.DEAD;
     const won = game.state === Game.State.WON || game.state === Game.State.FINISHED;
 
+    this.drawLevelBackground(level, game);
     image(this.staticLayerFor(level), 0, 0);
 
     push();
     translate(origin.x, origin.y);
     if (won) this.drawWinLight(game.reachedGoal, game.winProgress);
+    for (const lamp of world.lamps) this.drawLamp(lamp);
+    this.drawCobwebs(level, !dead && !won);
     Phosphor.glow();
     this.drawHomeOutlines(world.tiles);
     this.drawDoors(level);
@@ -52,6 +59,7 @@ class Renderer {
     if (dead) this.drawParticles(game.deathBurst, level);
     else this.drawPlayer(world.player, !won);
     for (const key of world.keys) this.drawKey(key);
+    this.drawFireflies(world.lamps);
     this.drawBubbles(world.bubbles);
     if (game.hintVisible) this.drawHint(level.hint);
     if (won) this.drawWinGlow(game.reachedGoal, game.winProgress);
@@ -187,6 +195,37 @@ class Renderer {
     Phosphor.fill(200 * amount);
     rect(x, scanY - 1, w, 2);
     Phosphor.noGlow();
+  }
+
+  // Chosen once when a level is entered. Restarting the same visit keeps the picture.
+  backgroundFor(game) {
+    if (this.backgroundVisit !== game.levelVisit) {
+      this.backgroundVisit = game.levelVisit;
+      const images = this.backgroundImages;
+      this.backgroundPick = images.length === 0 ? null : images[Math.floor(Math.random() * images.length)];
+    }
+    return this.backgroundPick;
+  }
+
+  // Drawn only inside the level bounds, dimmed so the tiles stay readable.
+  drawLevelBackground(level, game) {
+    const img = this.backgroundFor(game);
+    if (!img) return;
+    const origin = Layout.levelOrigin(level);
+    const w = level.pixelWidth;
+    const h = level.pixelHeight;
+    const scale = Math.max(w / img.width, h / img.height);
+    const dw = img.width * scale;
+    const dh = img.height * scale;
+    const ctx = drawingContext;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(origin.x, origin.y, w, h);
+    ctx.clip();
+    tint(100);
+    image(img, origin.x + (w - dw) / 2, origin.y + (h - dh) / 2, dw, dh);
+    noTint();
+    ctx.restore();
   }
 
   // ---------- Static layer (cached per level) ----------
@@ -343,6 +382,89 @@ class Renderer {
     rect(x + 5, y + CELL - 7, CELL - 10, 5);
     Phosphor.stroke(170, 1);
     line(x + 2, y + CELL - 1, x + CELL - 2, y + CELL - 1);
+  }
+
+  // The animated web fills its cell. The GIF's background is transparent, and the cell stays
+  // empty, so the player walks straight through it.
+  drawCobwebs(level, animate) {
+    const cells = level.cobwebCells;
+    if (cells.length === 0) return;
+    const sprite = this.cobwebSprite;
+    if (!sprite) {
+      noFill();
+      Phosphor.stroke(120, 1);
+      for (const { col, row } of cells) {
+        const x = col * CELL;
+        const y = row * CELL;
+        line(x + 2, y + 2, x + CELL - 4, y + 4);
+        line(x + 2, y + 2, x + 4, y + CELL - 4);
+        line(x + 2, y + 2, x + CELL * 0.7, y + CELL * 0.7);
+      }
+      return;
+    }
+
+    if (animate) sprite.play();
+    else sprite.pause();
+    // Scaled from the GIF's 16px up to the cell, so the web meets the blocks around it.
+    // Width and height have to be passed: p5 will not draw an animated GIF from its intrinsic size alone.
+    for (const { col, row } of cells) image(sprite, col * CELL, row * CELL, CELL, CELL);
+  }
+
+  // A pool of light on the background, then the lamp itself: a shade on a cord from the
+  // ceiling, a post standing on the floor, or a bare lantern when it floats.
+  drawLamp(lamp) {
+    const { x, y } = lamp;
+    const brightness = lamp.brightnessAt(millis());
+    const radius = CONFIG.lamp.lightRadius;
+
+    Phosphor.noGlow();
+    const ctx = drawingContext;
+    const light = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    light.addColorStop(0, `rgba(66, 255, 0, ${0.2 * brightness})`);
+    light.addColorStop(0.4, `rgba(66, 255, 0, ${0.07 * brightness})`);
+    light.addColorStop(1, "rgba(66, 255, 0, 0)");
+    ctx.fillStyle = light;
+    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+
+    const top = lamp.row * CELL;
+    const bottom = top + CELL;
+    Phosphor.glow(6);
+    noFill();
+    Phosphor.stroke(170, 1);
+    if (lamp.mount === Lamp.Mount.CEILING) {
+      line(x, top, x, y - CELL * 0.25);
+      Phosphor.stroke(255, 2);
+      // Shade: a trapezoid open at the bottom.
+    } else if (lamp.mount === Lamp.Mount.FLOOR) {
+      line(x, y + CELL * 0.2, x, bottom - 2);
+      Phosphor.stroke(255, 2);
+      line(x - CELL * 0.2, bottom - 1, x + CELL * 0.2, bottom - 1);
+      rect(x - CELL * 0.17, y - CELL * 0.2, CELL * 0.34, CELL * 0.4, 2);
+    } else {
+      Phosphor.stroke(255, 2);
+      rect(x - CELL * 0.17, y - CELL * 0.22, CELL * 0.34, CELL * 0.44, 2);
+      line(x - CELL * 0.08, y - CELL * 0.3, x + CELL * 0.08, y - CELL * 0.3);
+    }
+
+    Phosphor.glow(14 * brightness);
+    noStroke();
+    fill(...Renderer.FIRE_CORE, 255 * brightness);
+    circle(x, lamp.mount === Lamp.Mount.CEILING ? y - CELL * 0.18 : y, CELL * 0.36);
+    Phosphor.glow();
+  }
+
+  drawFireflies(lamps) {
+    if (lamps.length === 0) return;
+    const time = millis();
+    noStroke();
+    for (const lamp of lamps) {
+      for (const fly of lamp.fliesAt(time)) {
+        Phosphor.glow(6 * fly.alpha);
+        fill(...Renderer.FIRE_CORE, 255 * fly.alpha);
+        rect(fly.x - 1, fly.y - 1, 2, 2);
+      }
+    }
+    Phosphor.glow();
   }
 
   // A bobbing key until it's collected; then it just trails the player.

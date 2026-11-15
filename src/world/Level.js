@@ -25,12 +25,15 @@ class Level {
     this.spawn = null;
     this.noBubbleCells = [];
     this.noBubbleKeys = new Set();
-
+    this.lampCells = []; // decoration only; the mount is worked out once all walls are known
+    this.cobwebCells = []; // decoration only; the animated web is drawn over the cell
     const zones = Level.zonesOf(entry);
+    const props = Level.propsOf(entry);
     for (let row = 0; row < this.rows; row++) {
       for (let col = 0; col < this.cols; col++) {
         this.parseCell(map[row][col], col, row);
         this.parseZone(zones[row]?.[col], col, row);
+        this.parseProp(props[row]?.[col], col, row);
       }
     }
 
@@ -38,6 +41,12 @@ class Level {
       this.spawn = Level.firstEmptyCell(map);
       console.warn(`Level has no player start (P); starting at column ${this.spawn.col}, row ${this.spawn.row}.`, map);
     }
+  }
+
+  lampMount(col, row) {
+    if (this.wallKeys.has(Level.key(col, row - 1))) return Lamp.Mount.CEILING;
+    if (this.wallKeys.has(Level.key(col, row + 1))) return Lamp.Mount.FLOOR;
+    return Lamp.Mount.FLOATING;
   }
 
   static firstEmptyCell(map) {
@@ -57,6 +66,10 @@ class Level {
       this.doorKeys.add(Level.key(col, row));
     } else if (char === "K") {
       this.keyCells.push({ col, row });
+    } else if (char === "L") {
+      this.lampCells.push({ col, row });
+    } else if (char === "W") {
+      this.cobwebCells.push({ col, row });
     } else if (char === "O") {
       this.buttonCells.push({ col, row });
     } else if (char in Level.TILE_TYPES) {
@@ -64,6 +77,12 @@ class Level {
     } else if (char === "P") {
       this.spawn = { col, row };
     }
+  }
+
+  // Decorations. L and W are also accepted on the map, so older levels keep working.
+  parseProp(char, col, row) {
+    if (char === "L") this.lampCells.push({ col, row });
+    else if (char === "W") this.cobwebCells.push({ col, row });
   }
 
   parseZone(char, col, row) {
@@ -80,6 +99,11 @@ class Level {
   // Missing rows or cells in the zones grid have no condition.
   static zonesOf(entry) {
     return Array.isArray(entry) ? [] : entry.zones ?? [];
+  }
+
+  // A third grid, same shape as the map, holding decoration only. Missing rows are empty.
+  static propsOf(entry) {
+    return Array.isArray(entry) ? [] : entry.props ?? [];
   }
 
   // `x` and `y` are in level coordinates.

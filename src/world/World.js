@@ -9,6 +9,7 @@ class World {
     this.keys = level.keyCells.map(({ col, row }) => new Key(col, row));
     this.keyTrail = []; // collected keys, in pickup order
     this.buttons = level.buttonCells.map(({ col, row }) => new Button(col, row));
+    this.lamps = level.lampCells.map(({ col, row }) => new Lamp(col, row, level.lampMount(col, row)));
     this.events = []; // sound effect names for this frame, e.g. "key"
     this.dust = []; // DustPuffs from jumps
     this.hintDismissed = false; // set by the player's first input in this attempt

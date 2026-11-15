@@ -7,6 +7,9 @@
 //   O  button (pressed for good by the player or a block; opens every door)
 //   D  door (solid like a wall until a button is pressed)
 //   P  player start
+//   L  lamp (decoration only, with fireflies; hangs from a wall above, stands on a wall below,
+//      otherwise floats)
+//   W  cobweb (decoration only; an animated web with a spider, and you can walk through it)
 //   .  empty
 // A gap in the bottom row is a pit: falling through it restarts the level.
 //
@@ -26,6 +29,11 @@
 // Zones legend (same grid as the map; missing rows or cells have no condition):
 //   x  no-bubble zone (the bubble can't be started here; drawn in red)
 //   .  no condition
+// Props legend (a third grid, decoration only; it never blocks or replaces the map):
+//   L  lamp
+//   W  cobweb
+//   .  nothing
+//   props: ["....L...."],
 //
 // Levels are grouped by difficulty, up to CONFIG.maxLevelsPerDifficulty (20) each.
 // Within a difficulty, each level unlocks once the previous one is cleared.
@@ -38,7 +46,7 @@ const DIFFICULTIES = [
       {
         map: [
           "####################",
-          "#......######......#",
+          "#.L....######....L.#",
           "#......######......#",
           "#......BBBBBB......#",
           "#......BBBBBB......#",
@@ -63,7 +71,7 @@ const DIFFICULTIES = [
           "#..................#",
           "#......######......#",
           "#......######......#",
-          "#......######......#",
+          "#.......L..L.......#",
           "#..................#",
           "#..................#",
           "#..................#",
@@ -92,15 +100,15 @@ const DIFFICULTIES = [
       {
         map: [
           "####################",
-          "#..................#",
-          "#...............G..#",
-          "#..................#",
-          "#..................#",
+          "#W.##.##.##.##.###.#",
+          "#..##.##.##.##..G..#",
           "#..................#",
           "#..................#",
           "#..................#",
           "#..................#",
-          "#P...FFFFFF.....B..#",
+          "#..................#",
+          "#..................#",
+          "#P...FFFFFF.....B.F#",
           "####################",
         ],
         zones: [
@@ -115,6 +123,9 @@ const DIFFICULTIES = [
           "...xxxxxxxxxx.......",
           "...xxxxxxxxxx.......",
           "...xxxxxxxxxx.......",
+        ],
+        dialog: [
+          { speaker: "YOU", text: "...WOW, THERE IS MORE FIRE THAN I THOUGHT. ILL HAVE TO GET CREATIVE." },
         ],
         hint: { x: 7, y: 8, text: "TAP MOVEMENT BUTTON TWICE TO DASH", side: "above" },
       },

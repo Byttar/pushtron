@@ -118,6 +118,15 @@
       color: var(--bg);
     }
 
+    #palette button.prop {
+      opacity: 0.7;
+    }
+
+    #palette button.prop:hover,
+    #palette button.prop.active {
+      opacity: 1;
+    }
+
     textarea {
       width: 100%;
       box-sizing: border-box;
@@ -169,7 +178,7 @@
       </section>
 
       <section>
-        <span>&gt; TOOLS (KEYS 1-9, X)</span>
+        <span>&gt; TOOLS (KEYS 1-9, L, W, X)</span>
         <div id="palette"></div>
         <span>LEFT CLICK/DRAG: PAINT &nbsp; RIGHT: ERASE</span>
       </section>
