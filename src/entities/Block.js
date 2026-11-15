@@ -2,6 +2,7 @@
 class Block extends Tile {
   moveX(amount, world) {
     if (amount === 0) return;
+    if (!world.playerAlive) return super.moveX(amount, world);
     const { player } = world;
     const riding = player.isStandingOn(this.bounds) || player.isHangingFrom(this.bounds);
     const startX = this.x;
@@ -14,6 +15,7 @@ class Block extends Tile {
 
   moveY(amount, world) {
     if (amount === 0) return;
+    if (!world.playerAlive) return super.moveY(amount, world);
     const { player } = world;
     const riding = player.isStandingOn(this.bounds);
     const hanging = player.isHangingFrom(this.bounds);
@@ -32,20 +34,24 @@ class Block extends Tile {
     }
   }
 
-  // If the player is pinned against a wall the block stops instead.
+  // If the player is pinned against something solid the block stops, and may crush them.
   shovePlayerX(direction, world) {
     const { player } = world;
     const shove = direction > 0 ? this.x + CELL - player.x : this.x - (player.x + player.width);
     player.moveX(shove, world, this);
     if (Rect.overlaps(this.bounds, player.bounds)) {
       this.x = direction > 0 ? player.x - CELL : player.x + player.width;
+      this.blockedByPlayer(world, "x");
     }
   }
 
   liftPlayer(world) {
     const { player } = world;
     player.moveY(this.y - player.bottom, world, this);
-    if (Rect.overlaps(this.bounds, player.bounds)) this.y = player.bottom;
+    if (Rect.overlaps(this.bounds, player.bounds)) {
+      this.y = player.bottom;
+      this.blockedByPlayer(world, "y");
+    }
     player.vy = Math.max(player.vy, 0);
     player.onGround = true;
   }
@@ -53,6 +59,15 @@ class Block extends Tile {
   pushPlayerDown(world) {
     const { player } = world;
     player.moveY(this.y + CELL - player.y, world, this);
-    if (Rect.overlaps(this.bounds, player.bounds)) this.y = player.y - CELL;
+    if (Rect.overlaps(this.bounds, player.bounds)) {
+      this.y = player.y - CELL;
+      this.blockedByPlayer(world, "y");
+    }
+  }
+
+  // Crushes the pinned player only if the block is trying to go well past them,
+  // whether the bubble is pushing it or it's sliding back home.
+  blockedByPlayer(world, axis) {
+    if (Math.abs(this.target[axis] - this[axis]) > CONFIG.block.crushDepth) world.playerCrushed = true;
   }
 }

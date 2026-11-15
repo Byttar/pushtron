@@ -10,6 +10,9 @@ class Music {
     this.track = new Audio(CONFIG.audio.soundtrack);
     this.track.loop = true;
     this.setVolume(volume);
+
+    // Some browsers allow autoplay (e.g. Chrome on sites you visit often); otherwise unlock() starts it.
+    if (enabled) this.track.play().then(() => (this.unlocked = true), () => {});
   }
 
   get volume() {

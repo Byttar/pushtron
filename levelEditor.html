@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pushtron - Level Editor</title>
+  <style>
+    @font-face {
+      font-family: "VT323";
+      src: url("assets/VT323-Regular.ttf");
+    }
+
+    :root {
+      --phosphor: rgb(66, 255, 0);
+      --dim: rgba(66, 255, 0, 0.45);
+      --faint: rgba(66, 255, 0, 0.15);
+      --bg: rgb(8, 11, 8);
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: radial-gradient(ellipse at center, #0f140f 0%, #050605 75%);
+      color: var(--phosphor);
+      font-family: "VT323", monospace;
+      font-size: 20px;
+    }
+
+    main {
+      display: flex;
+      gap: 24px;
+      padding: 24px;
+      box-sizing: border-box;
+      min-height: 100%;
+      align-items: flex-start;
+    }
+
+    aside {
+      width: 320px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 44px;
+      font-weight: normal;
+      text-shadow: 0 0 8px var(--phosphor);
+    }
+
+    section {
+      border: 2px solid var(--phosphor);
+      box-shadow: 0 0 10px var(--faint);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    section>span {
+      color: var(--dim);
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    input,
+    button,
+    textarea {
+      font: inherit;
+      color: var(--phosphor);
+      background: var(--bg);
+      border: 1px solid var(--phosphor);
+      padding: 2px 8px;
+    }
+
+    input[type="number"] {
+      width: 56px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:hover,
+    button.active {
+      background: var(--phosphor);
+      color: var(--bg);
+    }
+
+    #palette {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    #palette button {
+      text-align: left;
+    }
+
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      height: 260px;
+      font-size: 16px;
+      line-height: 1.1;
+      resize: vertical;
+    }
+
+    #warnings {
+      color: rgb(210, 255, 180);
+      min-height: 1em;
+    }
+
+    #stage {
+      flex: 1;
+      overflow: auto;
+    }
+
+    canvas {
+      display: block;
+      border-radius: 8px;
+      box-shadow: 0 0 40px rgba(66, 255, 0, 0.08), 0 0 0 1px rgba(66, 255, 0, 0.15);
+      cursor: crosshair;
+    }
+  </style>
+  <script src="p5.min.js"></script>
+  <script src="src/render/Theme.js"></script>
+  <script src="editor/levelEditor.js"></script>
+</head>
+
+<body>
+  <main>
+    <aside>
+      <h1>LEVEL EDITOR</h1>
+
+      <section>
+        <span>&gt; SIZE (COLS x ROWS)</span>
+        <div class="row">
+          <input id="cols" type="number" min="3" max="60" value="20">
+          x
+          <input id="rows" type="number" min="3" max="40" value="11">
+          <button id="resize">RESIZE</button>
+        </div>
+        <div class="row">
+          <button id="border">ADD BORDER WALLS</button>
+          <button id="clear">CLEAR</button>
+        </div>
+      </section>
+
+      <section>
+        <span>&gt; TOOLS (KEYS 1-6)</span>
+        <div id="palette"></div>
+        <span>LEFT CLICK/DRAG: PAINT &nbsp; RIGHT: ERASE</span>
+      </section>
+
+      <section>
+        <span>&gt; OUTPUT (PASTE INTO A levels ARRAY IN levels.js)</span>
+        <textarea id="output" spellcheck="false"></textarea>
+        <div class="row">
+          <button id="copy">COPY</button>
+          <button id="load">LOAD FROM TEXT</button>
+        </div>
+        <div id="warnings"></div>
+      </section>
+    </aside>
+
+    <div id="stage"></div>
+  </main>
+</body>
+
+</html>

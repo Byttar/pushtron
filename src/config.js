@@ -82,6 +82,12 @@ const CONFIG = Object.freeze({
     maxStep: 6, // max px per collision substep
   }),
 
+  block: Object.freeze({
+    // How far past a pinned player a block must be trying to go before it crushes them, in px.
+    // Smaller nudges just leave the block resting against the player.
+    crushDepth: CELL * 0.4,
+  }),
+
   fire: Object.freeze({
     hitInset: 3, // px of forgiveness before fire counts as touching
   }),

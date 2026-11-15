@@ -7,6 +7,8 @@ class World {
     this.player = Player.spawnAt(level.spawn.col, level.spawn.row);
     this.tiles = level.tileSpawns.map(({ type, col, row }) => new World.TILE_CLASSES[type](col, row));
     this.bubbles = [];
+    this.playerCrushed = false; // set by a block that can't get past the player
+    this.playerAlive = true; // once dead, blocks pass through the player's body
   }
 
   get blocks() {
@@ -31,6 +33,10 @@ class World {
     for (const bubble of this.bubbles) bubble.update(dt);
     this.bubbles = this.bubbles.filter((b) => !b.isFinished);
 
+    this.updateTiles(dt);
+  }
+
+  updateTiles(dt) {
     for (const tile of this.tiles) tile.update(dt, this);
   }
 

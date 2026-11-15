@@ -28,7 +28,7 @@ The game still starts if you open `index.html` straight from disk, but browsers 
 | Jump | `W`, `↑` or `Space` |
 | Bubble | Hold the left mouse button; drag to move it |
 | Restart level | `R` |
-| Back to level list | `Esc` |
+| Back to level list | `Esc`, then confirm with `Y` / `Enter` on LEAVE (`N` / `Esc` to stay) |
 
 Some movement details:
 

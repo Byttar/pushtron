@@ -6,7 +6,7 @@ class SaveData {
   constructor() {
     const data = SaveData.read();
     this.cleared = new Set((data.cleared ?? []).filter((entry) => typeof entry === "string"));
-    this.musicEnabled = data.musicEnabled ?? true;
+    this.musicEnabled = data.musicEnabled ?? false;
     this.musicVolume = typeof data.musicVolume === "number" ? data.musicVolume : CONFIG.audio.musicVolume;
   }
 

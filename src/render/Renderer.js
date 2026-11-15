@@ -56,6 +56,34 @@ class Renderer {
     this.messageOverlay.draw(game);
     this.drawFadeIn(game.fadeAmount);
     if (game.state === Game.State.WON) this.drawWinFadeOut(game.winProgress);
+    if (game.exitPrompt.isOpen) this.drawExitPrompt(game.exitPrompt);
+  }
+
+  // Dims the paused level and shows the leave/stay box in the message-box style.
+  drawExitPrompt(prompt) {
+    const screen = Layout.screenRect();
+    noStroke();
+    fill(0, 0, 0, 190);
+    rect(screen.x, screen.y, screen.w, screen.h);
+
+    push();
+    translate(screen.x, screen.y);
+    const box = prompt.box;
+    this.messageOverlay.drawBox(box.x, box.y, box.w, box.h);
+
+    noStroke();
+    Phosphor.glow(6);
+    Phosphor.fill();
+    textSize(THEME.textSize);
+    textAlign(LEFT, TOP);
+    text("> LEAVE THIS SECTOR?" + (Phosphor.blink() ? "_" : ""), box.x + 22, box.y + 24);
+    Phosphor.fill(110);
+    text("> PROGRESS ON IT WILL BE LOST", box.x + 22, box.y + 24 + THEME.lineHeight + 8);
+
+    Phosphor.glow(8);
+    prompt.items.forEach((item, i) => this.menuRenderer.drawButton(item, i === prompt.selected));
+    Phosphor.noGlow();
+    pop();
   }
 
   // ---------- Reaching the goal ----------

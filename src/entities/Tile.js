@@ -24,6 +24,7 @@ class Tile {
 
   update(dt, world) {
     const target = this.targetPosition(world.bubbles);
+    this.target = target;
     const follow = 1 - Math.exp(-dt / CONFIG.tile.followTime);
     const dx = (target.x - this.x) * follow;
     const dy = (target.y - this.y) * follow;

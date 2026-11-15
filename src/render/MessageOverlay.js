@@ -1,6 +1,6 @@
 // Typed terminal message shown over the level when it's cleared or the player dies.
 class MessageOverlay {
-  static DEATH_CAUSES = { fire: "BURNED", fall: "LOST IN THE VOID" };
+  static DEATH_CAUSES = { fire: "BURNED", fall: "LOST IN THE VOID", crush: "CRUSHED" };
 
   static TYPE_SPEED = 28; // ms per typed character
   static BOX_WIDTH = 420;

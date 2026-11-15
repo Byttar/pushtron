@@ -15,6 +15,7 @@ class Game {
     this.music = new Music(this.saveData.musicEnabled, this.saveData.musicVolume);
     this.sfx = new Sfx();
     this.menu = new MainMenu(this);
+    this.exitPrompt = new ExitPrompt(this);
     this.input = new Input((key) => this.onKeyPressed(key));
 
     this.difficulty = null;
@@ -129,7 +130,9 @@ class Game {
 
   // `pointer` is in canvas coordinates.
   update(dt, pointer) {
-    if (this.state === Game.State.MENU) {
+    if (this.exitPrompt.isOpen) {
+      this.exitPrompt.hover(Layout.toScreen(pointer.x, pointer.y));
+    } else if (this.state === Game.State.MENU) {
       this.menu.hover(Layout.toScreen(pointer.x, pointer.y));
     } else if (this.state === Game.State.LOADING) {
       this.loadingElapsed += dt;
@@ -144,6 +147,8 @@ class Game {
       if (this.world.player.justJumped) this.sfx.play("jump");
       this.checkOutcome();
     } else if (this.state === Game.State.DEAD) {
+      // Bubbles are cleared on death, so the tiles slide back home.
+      this.world.updateTiles(dt);
       this.deathBurst.update(dt, this.level);
     } else if (this.state === Game.State.WON || this.state === Game.State.FINISHED) {
       // The level stays frozen while the goal glows; then the next level loads on its own.
@@ -153,7 +158,9 @@ class Game {
   }
 
   checkOutcome() {
-    if (this.world.isPlayerBurned()) {
+    if (this.world.playerCrushed) {
+      this.die("crush");
+    } else if (this.world.isPlayerBurned()) {
       this.die("fire");
     } else if (this.world.hasPlayerFallen()) {
       this.die("fall");
@@ -170,6 +177,7 @@ class Game {
     const { player, level } = this.world;
     this.state = Game.State.DEAD;
     this.deathCause = cause;
+    this.world.playerAlive = false;
     this.world.clearBubbles();
     this.sfx.play("die");
 
@@ -185,8 +193,10 @@ class Game {
   // `x` and `y` are in canvas coordinates.
   pointerPressed(x, y) {
     this.music.unlock();
-    if (this.state === Game.State.MENU) {
-      const screenPoint = Layout.toScreen(x, y);
+    const screenPoint = Layout.toScreen(x, y);
+    if (this.exitPrompt.isOpen) {
+      this.exitPrompt.click(screenPoint.x, screenPoint.y);
+    } else if (this.state === Game.State.MENU) {
       this.menu.click(screenPoint.x, screenPoint.y);
     } else if (this.state === Game.State.FINISHED && !this.isCelebrating) {
       this.nextLevel();
@@ -208,7 +218,8 @@ class Game {
       return;
     }
 
-    if (key === "escape") this.returnToLevelList();
+    if (this.exitPrompt.isOpen) this.exitPrompt.handleKey(key);
+    else if (key === "escape") this.exitPrompt.open();
     else if (this.state === Game.State.LOADING || this.state === Game.State.WON) return;
     else if (this.state === Game.State.FINISHED) {
       if (key === "enter" && !this.isCelebrating) this.nextLevel();
