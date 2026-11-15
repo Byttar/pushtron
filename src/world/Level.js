@@ -1,14 +1,17 @@
 // The layout of a level, parsed from a text map (see levels.js for the legend).
 // Everything is static except whether the doors are open.
 //
-// A level is either just the map (an array of rows) or { map, zones }, where `zones` is a second
-// grid laid over the map that adds conditions to cells (see ZONE_TYPES).
+// A level is either just the map (an array of rows) or { map, zones, dialog }, where `zones` is a
+// second grid laid over the map that adds conditions to cells (see ZONE_TYPES), and `dialog` is a
+// list of pages for the conversation box shown when the level opens.
 class Level {
   static TILE_TYPES = { B: "block", F: "fire", G: "goal" };
   static ZONE_TYPES = { x: "noBubble" };
 
   constructor(entry) {
     const map = Level.mapOf(entry);
+    this.dialog = Array.isArray(entry) ? [] : entry.dialog ?? []; // pages shown when the level opens
+    this.hint = Array.isArray(entry) ? null : entry.hint ?? null; // "click here" marker, in cells
     this.rows = map.length;
     this.cols = Level.widthOf(map);
     this.wallCells = [];

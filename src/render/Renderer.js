@@ -53,6 +53,8 @@ class Renderer {
     else this.drawPlayer(world.player, !won);
     for (const key of world.keys) this.drawKey(key);
     this.drawBubbles(world.bubbles);
+    const hintVisible = game.state === Game.State.PLAYING && !game.isFadingIn && !game.dialog.isOpen;
+    if (hintVisible && world.showsHint) this.drawHint(level.hint);
     if (won) this.drawWinGlow(game.reachedGoal, game.winProgress);
     Phosphor.noGlow();
     pop();
@@ -60,7 +62,42 @@ class Renderer {
     this.messageOverlay.draw(game);
     this.drawFadeIn(game.fadeAmount);
     if (game.state === Game.State.WON) this.drawWinFadeOut(game.winProgress);
+    if (game.dialog.isOpen) this.drawDialog(game.dialog);
     if (game.exitPrompt.isOpen) this.drawExitPrompt(game.exitPrompt);
+  }
+
+  // Conversation box along the top of the screen. The arrow in the bottom-right corner
+  // blinks once the page is fully typed, to say a press will continue.
+  drawDialog(dialog) {
+    const screen = Layout.screenRect();
+    const { x, y, w, h } = dialog.box;
+    const pad = Dialog.PADDING;
+
+    push();
+    translate(screen.x, screen.y);
+    this.messageOverlay.drawBox(x, y, w, h);
+
+    noStroke();
+    Phosphor.glow(6);
+    textSize(THEME.textSize);
+    textAlign(LEFT, TOP);
+    textLeading(THEME.lineHeight + 6);
+    Phosphor.fill(110);
+    text(`> TRANSMISSION ${dialog.page + 1}/${dialog.pages.length}`, x + pad, y + 14);
+    Phosphor.fill();
+    const cursor = dialog.isTyping ? "_" : "";
+    text(dialog.shownText + cursor, x + pad, y + 14 + THEME.lineHeight + 10, w - pad * 2 - 30, h - 50);
+
+    if (!dialog.isTyping && Phosphor.blink(400)) {
+      const ax = x + w - pad - 4;
+      const ay = y + h - pad;
+      triangle(ax - 12, ay - 8, ax - 12, ay + 8, ax, ay);
+      Phosphor.fill(110);
+      textAlign(RIGHT, CENTER);
+      text(dialog.isLastPage ? "START" : "NEXT", ax - 20, ay - 2);
+    }
+    Phosphor.noGlow();
+    pop();
   }
 
   // Dims the paused level and shows the leave/stay box in the message-box style.
@@ -436,6 +473,48 @@ class Renderer {
         rect(p.x, p.y, p.size, p.size);
       }
     }
+    Phosphor.glow();
+  }
+
+  // A pulsing target with rings, and a boxed label to one side pointing at it.
+  drawHint({ x: col, y: row, text: label, side = "above" }) {
+    const cx = col * CELL;
+    const cy = row * CELL;
+    const pulse = (Math.sin(millis() / 180) + 1) / 2;
+
+    noFill();
+    Phosphor.glow(10);
+    Phosphor.stroke(255, 2);
+    circle(cx, cy, CELL * (0.5 + pulse * 0.2));
+    const ring = (millis() % 1000) / 1000;
+    Phosphor.stroke(200 * (1 - ring), 1.5);
+    circle(cx, cy, CELL * (0.6 + ring * 1.6));
+    noStroke();
+    Phosphor.fill();
+    circle(cx, cy, 4);
+
+    textSize(THEME.textSize);
+    const w = textWidth(label) + 16;
+    const h = THEME.lineHeight + 8;
+    const gap = CELL * 1.1;
+    const offsets = {
+      above: { x: -w / 2, y: -gap - h },
+      below: { x: -w / 2, y: gap },
+      left: { x: -gap - w, y: -h / 2 },
+      right: { x: gap, y: -h / 2 },
+    };
+    const { x: ox, y: oy } = offsets[side] ?? offsets.above;
+    const bx = cx + ox;
+    const by = cy + oy + Math.sin(millis() / 250) * 2;
+
+    Phosphor.glow(8);
+    fill(...THEME.background);
+    Phosphor.stroke(255, 1.5);
+    rect(bx, by, w, h);
+    noStroke();
+    Phosphor.fill();
+    textAlign(CENTER, CENTER);
+    text(label, bx + w / 2, by + h / 2 - 2);
     Phosphor.glow();
   }
 

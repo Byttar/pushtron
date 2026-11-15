@@ -15,6 +15,13 @@
 //     map:   ["#####", "#P.G#", "#####"],
 //     zones: [".....", ".xx..", "....."],
 //   }
+// The object can also have `dialog`: a list of pages for a conversation box shown once when the
+// level is entered (not on restarts). Each page is a string; long lines wrap.
+//   dialog: ["FIRST PAGE.", "SECOND PAGE."],
+// And `hint`: a pulsing "click here" marker, shown until the player starts their first bubble.
+// `x` and `y` are in cells (fractions allowed, e.g. 13.5 is the middle of column 13);
+// `side` is where the label goes: "above" (default), "below", "left" or "right".
+//   hint: { x: 13.5, y: 10, text: "HOLD CLICK HERE", side: "left" },
 // Zones legend (same grid as the map; missing rows or cells have no condition):
 //   x  no-bubble zone (the bubble can't be started here; drawn in red)
 //   .  no condition
@@ -27,19 +34,27 @@ const DIFFICULTIES = [
     id: "easy",
     name: "EASY",
     levels: [
-      [
-        "####################",
-        "#..................#",
-        "#..................#",
-        "#..................#",
-        "#..................#",
-        "#...............G..#",
-        "#.............######",
-        "#.............######",
-        "#.............######",
-        "#P...........B######",
-        "########B######....#",
-      ],
+      {
+        map: [
+          "####################",
+          "#......######......#",
+          "#......######......#",
+          "#......######......#",
+          "#......######......#",
+          "#.F..F.######.F..F.#",
+          "#.#..#.######.#..#.#",
+          "#.......BBBB.......#",
+          "#.......BBBB.......#",
+          "#..P....BBBB....G..#",
+          "####################",
+        ],
+        dialog: [
+          "WELCOME TO PUSHTRON. YOU CAN'T PUSH ANYTHING WITH YOUR HANDS, BUT YOU CAN BLOW A BUBBLE.",
+          "HOLD THE LEFT MOUSE BUTTON TO GROW A BUBBLE. IT SHOVES BLOCKS AWAY, AND YOU CAN STAND ON A BLOCK WHILE IT MOVES.",
+          "DRAG TO MOVE THE BUBBLE. LET GO AND EVERYTHING SLIDES BACK HOME, SO DON'T BE IN THE WAY OR YOU'LL BE CRUSHED.",
+        ],
+        hint: { x: 10, y: 8, text: "HOLD CLICK HERE", side: "above" },
+      },
       {
         map: [
           "###############",
@@ -74,6 +89,10 @@ const DIFFICULTIES = [
           "xxxxxxxxxxxxxx.",
           ".xxxxxxxxxxxxx.",
           "...............",
+        ],
+        dialog: [
+          "WARNING: THIS SECTOR HAS A STATIC FIELD, THE RED STRIPED AREA. YOUR BUBBLE SHORTS OUT THE MOMENT IT TOUCHES ONE.",
+          "YOU CAN'T START A BUBBLE INSIDE IT, AND DRAGGING ONE IN SHUTS IT DOWN, SO YOU CAN'T PUSH THE FIRE AWAY FROM IN THERE.",
         ],
       },
       [

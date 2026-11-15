@@ -16,6 +16,8 @@ class Game {
     this.sfx = new Sfx();
     this.menu = new MainMenu(this);
     this.exitPrompt = new ExitPrompt(this);
+    this.dialog = new Dialog(this.sfx);
+    this.pendingDialog = []; // pages to open once the level has faded in
     this.input = new Input((key) => this.onKeyPressed(key));
 
     this.difficulty = null;
@@ -59,6 +61,9 @@ class Game {
     this.deathCause = null;
     this.deathBurst = null;
     this.input.consumeJump();
+    // The dialog plays when a level is entered, not when it's restarted after a death or R.
+    this.dialog.close();
+    this.pendingDialog = withTransition ? this.level.dialog : [];
   }
 
   startLevel(difficultyId, index) {
@@ -101,6 +106,7 @@ class Game {
 
   openMenu(page = MainMenu.Page.MAIN, difficultyId = null) {
     this.world?.clearBubbles();
+    this.dialog.close();
     this.menu.openPage(page, difficultyId);
     this.state = Game.State.MENU;
   }
@@ -132,6 +138,7 @@ class Game {
   update(dt, pointer) {
     if (this.exitPrompt.isOpen) {
       this.exitPrompt.hover(Layout.toScreen(pointer.x, pointer.y));
+      this.dialog.silence();
     } else if (this.state === Game.State.MENU) {
       this.menu.hover(Layout.toScreen(pointer.x, pointer.y));
     } else if (this.state === Game.State.LOADING) {
@@ -143,6 +150,12 @@ class Game {
     } else if (this.isFadingIn) {
       // The level holds still until it has faded in.
       this.fadeElapsed += dt;
+    } else if (this.dialog.isOpen) {
+      // The level is paused while the dialog is up.
+      this.dialog.update(dt);
+    } else if (this.state === Game.State.PLAYING && this.pendingDialog.length > 0) {
+      this.dialog.open(this.pendingDialog);
+      this.pendingDialog = [];
     } else if (this.state === Game.State.PLAYING) {
       const { x, y } = Layout.toLevel(pointer.x, pointer.y, this.level);
       this.world.moveBubble(x, y);
@@ -201,6 +214,8 @@ class Game {
     const screenPoint = Layout.toScreen(x, y);
     if (this.exitPrompt.isOpen) {
       this.exitPrompt.click(screenPoint.x, screenPoint.y);
+    } else if (this.dialog.isOpen) {
+      this.advanceDialog();
     } else if (this.state === Game.State.MENU) {
       this.menu.click(screenPoint.x, screenPoint.y);
     } else if (this.state === Game.State.FINISHED && !this.isCelebrating) {
@@ -215,9 +230,15 @@ class Game {
 
   // True while the pointer (canvas coordinates) is over a no-bubble zone of a level being played.
   isBubbleBlockedAt(x, y) {
-    if (this.state !== Game.State.PLAYING || this.exitPrompt.isOpen) return false;
+    if (this.state !== Game.State.PLAYING || this.exitPrompt.isOpen || this.dialog.isOpen) return false;
     const { x: levelX, y: levelY } = Layout.toLevel(x, y, this.level);
     return this.level.isInside(levelX, levelY) && !this.level.allowsBubbleAt(levelX, levelY);
+  }
+
+  // Space turns the pages and is also a jump key, so the last press mustn't carry into the level.
+  advanceDialog() {
+    this.dialog.advance();
+    if (!this.dialog.isOpen) this.input.consumeJump();
   }
 
   pointerReleased() {
@@ -234,6 +255,9 @@ class Game {
 
     if (this.exitPrompt.isOpen) this.exitPrompt.handleKey(key);
     else if (key === "escape") this.exitPrompt.open();
+    else if (this.dialog.isOpen) {
+      if (Dialog.ADVANCE_KEYS.includes(key)) this.advanceDialog();
+    }
     else if (this.state === Game.State.LOADING || this.state === Game.State.WON) return;
     else if (this.state === Game.State.FINISHED) {
       if (key === "enter" && !this.isCelebrating) this.nextLevel();

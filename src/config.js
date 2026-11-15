@@ -34,10 +34,15 @@ const CONFIG = Object.freeze({
       select: "assets/audio/jump.mp3", // menu selection reuses the jump sound
       die: "assets/audio/die.mp3",
       goal: "assets/audio/reach_goal.mp3",
+      speaking: "assets/audio/speaking.mp3", // loops while dialog text is being typed
       dash: "assets/audio/jump.mp3", // placeholder until the dash gets its own sound
       key: "assets/audio/jump.mp3", // placeholder until keys get their own sound
       button: "assets/audio/jump.mp3", // placeholder until buttons get their own sound
     }),
+  }),
+
+  dialog: Object.freeze({
+    typeSpeed: 30, // ms per typed character
   }),
 
   layout: Object.freeze({

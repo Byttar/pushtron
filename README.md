@@ -111,6 +111,15 @@ A level can also have a second layer, `zones`, laid over the map to add conditio
 | `x` | No-bubble zone. Clicking here doesn't start a bubble. Drawn as red stripes. |
 | `.` | No condition. |
 
+The object form can also have a `dialog`: a list of pages shown in a conversation box when the level is entered. It isn't shown again on restarts. The text types out with a speaking sound, and `Enter`, `Space` or a click finishes the page or moves to the next one.
+
+```js
+dialog: [
+  "WARNING: THIS SECTOR HAS A STATIC FIELD.",
+  "YOU CAN'T START A BUBBLE INSIDE IT.",
+],
+```
+
 Rows line up with the map by position. Rows missing from the end of `zones`, or cells missing from the end of a row, have no condition. Each difficulty shows up to 20 levels in the menu. Levels can be any size: the screen grows to fit the biggest one and smaller levels are centred.
 
 ```js
