@@ -1,0 +1,53 @@
+// A one-cell object that is repelled by bubbles and slides back to its home cell.
+class Tile {
+  constructor(col, row) {
+    this.homeX = col * CELL;
+    this.homeY = row * CELL;
+    this.x = this.homeX;
+    this.y = this.homeY;
+  }
+
+  get bounds() {
+    return { x: this.x, y: this.y, w: CELL, h: CELL };
+  }
+
+  get isAwayFromHome() {
+    return Math.abs(this.x - this.homeX) + Math.abs(this.y - this.homeY) > 2;
+  }
+
+  // Home position, pushed out to the edge of every bubble covering it.
+  targetPosition(bubbles) {
+    let center = { x: this.homeX + CELL / 2, y: this.homeY + CELL / 2 };
+    for (const bubble of bubbles) center = bubble.repel(center, CELL / 2);
+    return { x: center.x - CELL / 2, y: center.y - CELL / 2 };
+  }
+
+  update(dt, world) {
+    const target = this.targetPosition(world.bubbles);
+    const follow = 1 - Math.exp(-dt / CONFIG.tile.followTime);
+    const dx = (target.x - this.x) * follow;
+    const dy = (target.y - this.y) * follow;
+
+    const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / CONFIG.tile.maxStep));
+    for (let i = 0; i < steps; i++) {
+      this.moveX(dx / steps, world);
+      this.moveY(dy / steps, world);
+    }
+  }
+
+  moveX(amount, world) {
+    if (amount === 0) return;
+    this.x += amount;
+    for (const wall of world.level.wallRectsOverlapping(this.bounds)) {
+      this.x = amount > 0 ? Math.min(this.x, wall.x - CELL) : Math.max(this.x, wall.x + wall.w);
+    }
+  }
+
+  moveY(amount, world) {
+    if (amount === 0) return;
+    this.y += amount;
+    for (const wall of world.level.wallRectsOverlapping(this.bounds)) {
+      this.y = amount > 0 ? Math.min(this.y, wall.y - CELL) : Math.max(this.y, wall.y + wall.h);
+    }
+  }
+}
