@@ -6,6 +6,13 @@ let game;
 let renderer;
 
 async function setup() {
+  if (isUnsupportedDevice()) {
+    noCanvas();
+    noLoop();
+    document.getElementById("unsupported").hidden = false;
+    return;
+  }
+
   const [sprite, hangSprite, font] = await Promise.all([
     loadOptional(loadImage, CONFIG.player.sprite.path),
     loadOptional(loadImage, CONFIG.player.sprite.hangPath),
@@ -23,6 +30,7 @@ async function setup() {
 
 // The game receives canvas coordinates and converts them for the menu or the level.
 function draw() {
+  if (!game) return;
   game.update(Math.min(deltaTime, CONFIG.maxFrameTime), { x: mouseX, y: mouseY });
   renderer.draw(game);
 }
@@ -33,6 +41,11 @@ function mousePressed() {
 
 function mouseReleased() {
   game?.pointerReleased();
+}
+
+// Phones and tablets: the game needs a keyboard and more room than their screens have.
+function isUnsupportedDevice() {
+  return window.screen.width < CONFIG.layout.minDeviceWidth;
 }
 
 // Assets can't load when index.html is opened straight from disk (use Live Server);

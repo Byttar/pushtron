@@ -44,6 +44,10 @@ const CONFIG = Object.freeze({
     // It grows to fit the largest level; smaller levels are centred inside it.
     minScreenWidth: 800,
     minScreenHeight: 440,
+    // Devices whose screen is narrower than this (phones, most tablets) get a "not supported"
+    // message instead of the game. Uses the device's screen, not the window, so a small
+    // desktop window still runs.
+    minDeviceWidth: 1024,
   }),
 
   player: Object.freeze({
