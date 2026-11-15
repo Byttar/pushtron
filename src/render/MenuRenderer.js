@@ -30,6 +30,7 @@ class MenuRenderer {
     else if (menu.page === MainMenu.Page.CREDITS) this.drawCredits();
     else this.drawHeading(`> ${menu.difficulty.name} // SELECT SECTOR`);
 
+    if (menu.page === MainMenu.Page.DIFFICULTY) this.drawCardLinks(menu.items.filter((item) => item.kind === "card"));
     menu.items.forEach((item, i) => {
       const selected = i === menu.selected;
       if (item.kind === "card") this.drawDifficultyCard(item, selected);
@@ -112,6 +113,30 @@ class MenuRenderer {
     }
   }
 
+  // A connector between each pair of neighbouring cards: a solid line with an arrow into a card
+  // that's unlocked, a dim dashed line into one that's still locked.
+  drawCardLinks(cards) {
+    for (let i = 1; i < cards.length; i++) {
+      const from = cards[i - 1].rect;
+      const to = cards[i].rect;
+      const y = from.y + from.h / 2;
+      const x1 = from.x + from.w;
+      const x2 = to.x;
+      const open = !cards[i].locked;
+
+      Phosphor.stroke(open ? 255 : 70, open ? 2 : 1);
+      Phosphor.dashed([3, 3]);
+      line(x1 - 2, y, x2 + 2, y);
+      Phosphor.solid();
+
+      noStroke();
+      Phosphor.fill(open ? 255 : 70);
+      circle(x1, y, 7);
+      if (open) circle(x2, y, 7);
+      else circle(x2, y, 7);
+    }
+  }
+
   drawDifficultyCard(item, selected) {
     const { x, y, w, h } = item.rect;
     const pad = 18;
@@ -122,7 +147,13 @@ class MenuRenderer {
       textSize(44);
       text(item.label, x + pad, y + pad);
       textSize(THEME.textSize);
-      text("NO SECTORS YET", x + pad, y + 90);
+      if (item.locked) {
+        text("[ LOCKED ]", x + pad, y + 90);
+        text(`CLEAR ${item.unlockedBy}`, x + pad, y + 115);
+        text("TO UNLOCK", x + pad, y + 140);
+      } else {
+        text("NO SECTORS YET", x + pad, y + 90);
+      }
       return;
     }
 

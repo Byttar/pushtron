@@ -53,8 +53,7 @@ class Renderer {
     else this.drawPlayer(world.player, !won);
     for (const key of world.keys) this.drawKey(key);
     this.drawBubbles(world.bubbles);
-    const hintVisible = game.state === Game.State.PLAYING && !game.isFadingIn && !game.dialog.isOpen;
-    if (hintVisible && world.showsHint) this.drawHint(level.hint);
+    if (game.hintVisible) this.drawHint(level.hint);
     if (won) this.drawWinGlow(game.reachedGoal, game.winProgress);
     Phosphor.noGlow();
     pop();
@@ -83,7 +82,7 @@ class Renderer {
     textAlign(LEFT, TOP);
     textLeading(THEME.lineHeight + 6);
     Phosphor.fill(110);
-    text(`> TRANSMISSION ${dialog.page + 1}/${dialog.pages.length}`, x + pad, y + 14);
+    text(`> ${dialog.speaker} ${dialog.page + 1}/${dialog.pages.length}`, x + pad, y + 14);
     Phosphor.fill();
     const cursor = dialog.isTyping ? "_" : "";
     text(dialog.shownText + cursor, x + pad, y + 14 + THEME.lineHeight + 10, w - pad * 2 - 30, h - 50);

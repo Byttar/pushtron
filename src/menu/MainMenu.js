@@ -10,7 +10,7 @@ class MainMenu {
   static NEW_GAME_RECT = { x: 60, y: 170, w: 260, h: 48 };
   static CARDS_TOP = 130;
   static CARD_HEIGHT = 200;
-  static CARD_GAP = 20;
+  static CARD_GAP = 44; // room for the link drawn between neighbouring cards
   static GRID_TOP = 130;
   static TILE = 56;
   static TILE_GAP = 12;
@@ -130,6 +130,7 @@ class MainMenu {
     const { PADDING, CARDS_TOP, CARD_HEIGHT, CARD_GAP } = MainMenu;
     const count = this.game.playableLevels(difficulty).length;
     const cardWidth = (Layout.screenRect().w - PADDING * 2 - CARD_GAP * 2) / 3;
+    const locked = !this.game.isDifficultyUnlocked(difficulty);
     return {
       id: "difficulty",
       kind: "card",
@@ -137,7 +138,9 @@ class MainMenu {
       label: difficulty.name,
       levelCount: count,
       clearedCount: this.game.saveData.clearedCount(difficulty.id, count),
-      enabled: count > 0,
+      locked,
+      unlockedBy: index > 0 ? this.game.difficulties[index - 1].name : null,
+      enabled: count > 0 && !locked,
       rect: { x: PADDING + index * (cardWidth + CARD_GAP), y: CARDS_TOP, w: cardWidth, h: CARD_HEIGHT },
     };
   }

@@ -28,6 +28,8 @@ const CONFIG = Object.freeze({
     // Takes over once a level starts and keeps playing back in the menu.
     levelSoundtrack: "assets/audio/ingamesoundtrack.mp3",
     musicVolume: 0.45,
+    duckedVolume: 0.12, // fraction of the music volume kept while dialog text is on screen
+    duckFadeTime: 300, // ms to fade between full and ducked volume
     sfxVolume: 0.6,
     effects: Object.freeze({
       jump: "assets/audio/jump.mp3",
@@ -88,8 +90,8 @@ const CONFIG = Object.freeze({
     dash: Object.freeze({
       doubleTapWindow: 250, // ms between the two left/right presses
       buffer: 100, // ms a dash request waits if it can't start yet (e.g. while hanging)
-      speed: 0.6 * WORLD_SCALE, // px per ms while dashing (running is 0.3)
-      duration: 120, // ms; the dash ignores gravity and goes in a straight line
+      speed: 0.75 * WORLD_SCALE, // px per ms while dashing (running is 0.3)
+      duration: 140, // ms of dash speed; gravity still applies the whole time
       cooldown: 700, // ms from the end of one dash until the next can start
     }),
     stepHeight: 3, // px of ledge the player walks up instead of being stopped (uneven moving blocks)

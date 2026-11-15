@@ -87,14 +87,13 @@ class Player {
     const accel = this.horizontalAccel(direction);
     this.onGround = false;
     for (let i = 0; i < steps; i++) {
-      if (this.dashing) {
-        this.updateDash(h);
-      } else {
-        this.vx = Player.approach(this.vx, direction * cfg.runSpeed, accel * h);
-        let gravity = cfg.gravity;
-        if (this.vy < 0 && !input.jumpHeld) gravity *= cfg.lowJumpGravity;
-        this.vy = Math.min(this.vy + gravity * h, cfg.maxFallSpeed);
-      }
+      if (this.dashing) this.updateDash(h);
+      else this.vx = Player.approach(this.vx, direction * cfg.runSpeed, accel * h);
+
+      // Gravity keeps pulling during a dash too; the dash only takes over horizontal speed.
+      let gravity = cfg.gravity;
+      if (this.vy < 0 && !input.jumpHeld) gravity *= cfg.lowJumpGravity;
+      this.vy = Math.min(this.vy + gravity * h, cfg.maxFallSpeed);
 
       if (this.moveX(this.vx * h, world)) {
         this.vx = 0;
@@ -141,11 +140,10 @@ class Player {
     if (!this.onGround) this.airJumpsLeft = 0;
   }
 
-  // A straight, gravity-free burst. Afterwards the player keeps running at normal top speed.
+  // A horizontal burst. Afterwards the player keeps running at normal top speed.
   updateDash(h) {
     const { runSpeed, dash } = CONFIG.player;
     this.dashTimer = Math.max(0, this.dashTimer - h);
-    this.vy = 0;
     this.vx = this.dashDirection * (this.dashing ? dash.speed : runSpeed);
   }
 

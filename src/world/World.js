@@ -11,7 +11,7 @@ class World {
     this.buttons = level.buttonCells.map(({ col, row }) => new Button(col, row));
     this.events = []; // sound effect names for this frame, e.g. "key"
     this.dust = []; // DustPuffs from jumps
-    this.usedBubble = false; // hides the level's hint once true
+    this.hintDismissed = false; // set by the player's first input in this attempt
     this.bubbles = [];
     this.playerCrushed = false; // set by a block that can't get past the player
     this.playerAlive = true; // once dead, blocks pass through the player's body
@@ -101,13 +101,16 @@ class World {
     return solids;
   }
 
-  // The level's hint shows until the first bubble of this attempt.
+  // The level's hint shows until the player's first input of this attempt.
   get showsHint() {
-    return Boolean(this.level.hint) && !this.usedBubble;
+    return Boolean(this.level.hint) && !this.hintDismissed;
+  }
+
+  dismissHint() {
+    this.hintDismissed = true;
   }
 
   startBubble(x, y) {
-    this.usedBubble = true;
     this.releaseBubbles();
     this.bubbles.push(new Bubble(x, y));
   }

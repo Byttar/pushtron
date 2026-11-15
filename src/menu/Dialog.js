@@ -19,8 +19,14 @@ class Dialog {
     return this.page < this.pages.length;
   }
 
+  // A page is a string, or { speaker, text } to name who's talking in the header.
   get text() {
-    return this.pages[this.page] ?? "";
+    const page = this.pages[this.page];
+    return typeof page === "string" ? page : page?.text ?? "";
+  }
+
+  get speaker() {
+    return this.pages[this.page]?.speaker ?? "TRANSMISSION";
   }
 
   get shownText() {

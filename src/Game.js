@@ -41,6 +41,16 @@ class Game {
     return this.difficulties.find((d) => d.id === id);
   }
 
+  // The first difficulty is always open; each one after it opens once every level of the
+  // previous difficulty is cleared (easy unlocks medium, medium unlocks hard).
+  isDifficultyUnlocked(difficulty) {
+    const index = this.difficulties.indexOf(difficulty);
+    if (index <= 0) return true;
+    const previous = this.difficulties[index - 1];
+    const count = this.playableLevels(previous).length;
+    return this.saveData.clearedCount(previous.id, count) === count;
+  }
+
   // Levels of a difficulty that the menu can show.
   playableLevels(difficulty) {
     return difficulty.levels.slice(0, CONFIG.maxLevelsPerDifficulty);
@@ -68,7 +78,8 @@ class Game {
 
   startLevel(difficultyId, index) {
     const difficulty = this.difficultyById(difficultyId);
-    if (difficulty && this.saveData.isUnlocked(difficultyId, index)) this.loadLevel(difficulty, index, true);
+    if (!difficulty || !this.isDifficultyUnlocked(difficulty) || !this.saveData.isUnlocked(difficultyId, index)) return;
+    this.loadLevel(difficulty, index, true);
   }
 
   restart() {
@@ -136,6 +147,9 @@ class Game {
 
   // `pointer` is in canvas coordinates.
   update(dt, pointer) {
+    this.music.setDucked(this.dialog.isOpen);
+    this.music.update(dt);
+
     if (this.exitPrompt.isOpen) {
       this.exitPrompt.hover(Layout.toScreen(pointer.x, pointer.y));
       this.dialog.silence();
@@ -221,6 +235,7 @@ class Game {
     } else if (this.state === Game.State.FINISHED && !this.isCelebrating) {
       this.nextLevel();
     } else if (this.state === Game.State.PLAYING && !this.isFadingIn) {
+      this.dismissHint();
       const levelPoint = Layout.toLevel(x, y, this.level);
       if (this.level.isInside(levelPoint.x, levelPoint.y) && this.level.allowsBubbleAt(levelPoint.x, levelPoint.y)) {
         this.world.startBubble(levelPoint.x, levelPoint.y);
@@ -261,6 +276,21 @@ class Game {
     else if (this.state === Game.State.LOADING || this.state === Game.State.WON) return;
     else if (this.state === Game.State.FINISHED) {
       if (key === "enter" && !this.isCelebrating) this.nextLevel();
-    } else if (key === "r") this.restart();
+    } else {
+      this.dismissHint();
+      if (key === "r") this.restart();
+    }
+  }
+
+  // The level's hint is on screen once the level is playable: faded in, with no dialog up or waiting.
+  get hintVisible() {
+    const playable = this.state === Game.State.PLAYING && !this.isFadingIn;
+    return playable && !this.dialog.isOpen && this.pendingDialog.length === 0 && this.world.showsHint;
+  }
+
+  // Only input made while the hint is visible dismisses it, so keys pressed during the
+  // fade-in or the dialog don't hide it before it's been seen.
+  dismissHint() {
+    if (this.hintVisible) this.world.dismissHint();
   }
 }
