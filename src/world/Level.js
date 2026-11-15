@@ -1,4 +1,5 @@
-// The static layout of a level, parsed from a text map (see levels.js for the legend).
+// The layout of a level, parsed from a text map (see levels.js for the legend).
+// Everything is static except whether the doors are open.
 class Level {
   static TILE_TYPES = { B: "block", F: "fire", G: "goal" };
 
@@ -7,6 +8,11 @@ class Level {
     this.cols = Level.widthOf(map);
     this.wallCells = [];
     this.wallKeys = new Set();
+    this.doorCells = [];
+    this.doorKeys = new Set();
+    this.doorsOpen = false;
+    this.keyCells = [];
+    this.buttonCells = [];
     this.tileSpawns = [];
     this.spawn = null;
 
@@ -15,12 +21,32 @@ class Level {
         this.parseCell(map[row][col], col, row);
       }
     }
+
+    if (!this.spawn) {
+      this.spawn = Level.firstEmptyCell(map);
+      console.warn(`Level has no player start (P); starting at column ${this.spawn.col}, row ${this.spawn.row}.`, map);
+    }
+  }
+
+  static firstEmptyCell(map) {
+    for (let row = 0; row < map.length; row++) {
+      const col = map[row].indexOf(".");
+      if (col !== -1) return { col, row };
+    }
+    return { col: 0, row: 0 };
   }
 
   parseCell(char, col, row) {
     if (char === "#") {
       this.wallCells.push({ col, row });
       this.wallKeys.add(Level.key(col, row));
+    } else if (char === "D") {
+      this.doorCells.push({ col, row });
+      this.doorKeys.add(Level.key(col, row));
+    } else if (char === "K") {
+      this.keyCells.push({ col, row });
+    } else if (char === "O") {
+      this.buttonCells.push({ col, row });
     } else if (char in Level.TILE_TYPES) {
       this.tileSpawns.push({ type: Level.TILE_TYPES[char], col, row });
     } else if (char === "P") {
@@ -50,15 +76,19 @@ class Level {
   }
 
   // Outside the map counts as a wall, except below it: that is open so pits can be fallen into.
+  // Closed doors are solid too.
   isWall(col, row) {
     if (row >= this.rows) return false;
     if (col < 0 || row < 0 || col >= this.cols) return true;
-    return this.wallKeys.has(Level.key(col, row));
+    const key = Level.key(col, row);
+    return this.wallKeys.has(key) || (!this.doorsOpen && this.doorKeys.has(key));
   }
 
-  // For drawing: treats everything outside the map as wall so the border has no outline.
+  // For drawing the cached background: treats everything outside the map as wall so the border
+  // has no outline. Doors are left out because they can open.
   isWallOrOutside(col, row) {
-    return row >= this.rows || this.isWall(col, row);
+    if (row >= this.rows || col < 0 || row < 0 || col >= this.cols) return true;
+    return this.wallKeys.has(Level.key(col, row));
   }
 
   wallRectsOverlapping(rect) {

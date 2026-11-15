@@ -3,6 +3,9 @@
 //   B  block (repelled by the bubble, solid to stand on)
 //   F  fire (repelled by the bubble, touching it restarts the level)
 //   G  goal (reach it to win; the bubble can push it too)
+//   K  key (collect every key before the goal opens; collected keys follow the player)
+//   O  button (pressed for good by the player or a block; opens every door)
+//   D  door (solid like a wall until a button is pressed)
 //   P  player start
 //   .  empty
 // A gap in the bottom row is a pit: falling through it restarts the level.
@@ -101,6 +104,28 @@ const DIFFICULTIES = [
         ".......B...B........",
         "BBBBBBBBBBBBBBBBBBBB",
         "....................",
+        "....................",
+      ],
+      [
+        "P......#...........K",
+        "#####..#.###########",
+        ".............D......",
+        ".......#.BBB.#......",
+        "###.####.....#......",
+        ".......#..F..#......",
+        ".......#######......",
+        ".FBBBF.#F...........",
+        ".B...B.#F...........",
+        ".F.B.F.#............",
+        ".B...B.#...FF..FF.F.",
+        ".FBBBF.#..BBBBBBBBBB",
+        ".......#............",
+        "B..O..B#............",
+        "########B...........",
+        "....................",
+        "....................",
+        ".............B......",
+        ".G.B..B..B..........",
         "....................",
       ],
     ],

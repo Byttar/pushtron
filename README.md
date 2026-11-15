@@ -80,6 +80,9 @@ Levels live in `src/levels.js`. Each one is an array of strings, one string per 
 | `B` | Block. Pushed by the bubble, and you can stand on it. |
 | `F` | Fire. Pushed by the bubble, and touching it kills you. |
 | `G` | Goal. Reach it to win. The bubble can push it too. |
+| `K` | Key. Collect every key before the goal opens. Collected keys follow you. |
+| `O` | Button. Pressed for good by you or a block, and opens every door. |
+| `D` | Door. Solid like a wall until a button is pressed. |
 | `P` | Player start. |
 | `.` | Empty. |
 

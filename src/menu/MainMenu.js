@@ -39,6 +39,8 @@ class MainMenu {
   }
 
   openPage(page, difficultyId = this.difficultyId) {
+    // The level song keeps playing through the level lists, and the title page brings the menu song back.
+    if (page === MainMenu.Page.MAIN) this.game.music.switchTo(CONFIG.audio.soundtrack);
     this.page = page;
     this.difficultyId = difficultyId;
     this.selected = Math.max(0, this.items.findIndex((item) => item.enabled));

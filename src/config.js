@@ -25,12 +25,16 @@ const CONFIG = Object.freeze({
 
   audio: Object.freeze({
     soundtrack: "assets/audio/soundtrack.mp3",
+    // Takes over once a level starts and keeps playing back in the menu.
+    levelSoundtrack: "assets/audio/ingamesoundtrack.mp3",
     musicVolume: 0.45,
     sfxVolume: 0.6,
     effects: Object.freeze({
       jump: "assets/audio/jump.mp3",
       select: "assets/audio/jump.mp3", // menu selection reuses the jump sound
       die: "assets/audio/die.mp3",
+      key: "assets/audio/jump.mp3", // placeholder until keys get their own sound
+      button: "assets/audio/jump.mp3", // placeholder until buttons get their own sound
     }),
   }),
 
@@ -86,6 +90,12 @@ const CONFIG = Object.freeze({
     // How far past a pinned player a block must be trying to go before it crushes them, in px.
     // Smaller nudges just leave the block resting against the player.
     crushDepth: CELL * 0.4,
+  }),
+
+  key: Object.freeze({
+    followGap: CELL * 0.8, // px between the player and the first key, and between keys
+    followLift: CELL * 0.4, // px the first key floats above the player's centre
+    followTime: 90, // ms smoothing; higher values trail further behind
   }),
 
   fire: Object.freeze({

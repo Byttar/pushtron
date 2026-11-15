@@ -41,13 +41,16 @@ class Renderer {
     if (won) this.drawWinLight(game.reachedGoal, game.winProgress);
     Phosphor.glow();
     this.drawHomeOutlines(world.tiles);
-    for (const goal of world.goals) this.drawGoal(goal);
+    this.drawDoors(level);
+    for (const button of world.buttons) this.drawButton(button);
+    for (const goal of world.goals) this.drawGoal(goal, !world.hasAllKeys);
     for (const tile of world.tiles) {
       if (tile instanceof Fire) this.drawFire(tile, !won);
       else if (tile instanceof Block) this.drawBlock(tile);
     }
     if (dead) this.drawParticles(game.deathBurst, level);
     else this.drawPlayer(world.player, !won);
+    for (const key of world.keys) this.drawKey(key);
     this.drawBubbles(world.bubbles);
     if (won) this.drawWinGlow(game.reachedGoal, game.winProgress);
     Phosphor.noGlow();
@@ -213,17 +216,70 @@ class Renderer {
 
   // ---------- Dynamic objects ----------
 
-  // A little screen with a blinking cursor: the exit terminal.
-  drawGoal({ x, y }) {
+  // A little screen with a blinking cursor: the exit terminal. While keys are missing it's
+  // dim and dashed, with no cursor.
+  drawGoal({ x, y }, locked = false) {
     noFill();
-    Phosphor.stroke(255, 2);
+    Phosphor.stroke(locked ? 110 : 255, 2);
+    if (locked) Phosphor.dashed([3, 3]);
     const inset = CELL * 0.1;
     rect(x + inset, y + inset, CELL - inset * 2, CELL - inset * 2, CELL * 0.18);
-    if (Phosphor.blink()) {
+    Phosphor.solid();
+    if (!locked && Phosphor.blink()) {
       noStroke();
       Phosphor.fill();
       rect(x + CELL * 0.4, y + CELL * 0.28, CELL * 0.2, CELL * 0.44);
     }
+  }
+
+  // Closed: a barred gate. Open: a faint dashed outline where it stood.
+  drawDoors(level) {
+    noFill();
+    for (const { col, row } of level.doorCells) {
+      const x = col * CELL;
+      const y = row * CELL;
+      if (level.doorsOpen) {
+        Phosphor.stroke(60, 1);
+        Phosphor.dashed([2, 4]);
+        rect(x + 3, y + 3, CELL - 6, CELL - 6);
+        Phosphor.solid();
+        continue;
+      }
+      Phosphor.stroke(255, 2);
+      rect(x + 2, y + 2, CELL - 4, CELL - 4);
+      Phosphor.stroke(170, 1);
+      for (const bar of [0.3, 0.5, 0.7]) line(x + CELL * bar, y + 4, x + CELL * bar, y + CELL - 4);
+    }
+  }
+
+  // A raised plate on the floor of its cell; flat and dim once pressed.
+  drawButton({ x, y, pressed }) {
+    if (pressed) {
+      noStroke();
+      Phosphor.fill(110);
+      rect(x + 3, y + CELL - 3, CELL - 6, 2);
+      return;
+    }
+    noFill();
+    Phosphor.stroke(255, 2);
+    rect(x + 5, y + CELL - 7, CELL - 10, 5);
+    Phosphor.stroke(170, 1);
+    line(x + 2, y + CELL - 1, x + CELL - 2, y + CELL - 1);
+  }
+
+  // A bobbing key until it's collected; then it just trails the player.
+  drawKey(key) {
+    const s = Key.SIZE;
+    const bob = key.collected ? 0 : Math.sin(millis() / 250) * 2;
+    push();
+    translate(key.x, key.y + bob);
+    noFill();
+    Phosphor.stroke(255, 2);
+    circle(-s * 0.25, 0, s * 0.4);
+    line(-s * 0.05, 0, s * 0.45, 0);
+    line(s * 0.28, 0, s * 0.28, s * 0.2);
+    line(s * 0.42, 0, s * 0.42, s * 0.25);
+    pop();
   }
 
   drawHomeOutlines(tiles) {

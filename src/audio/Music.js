@@ -7,7 +7,8 @@ class Music {
   constructor(enabled, volume) {
     this.enabled = enabled;
     this.unlocked = false;
-    this.track = new Audio(CONFIG.audio.soundtrack);
+    this.trackPath = CONFIG.audio.soundtrack;
+    this.track = new Audio(this.trackPath);
     this.track.loop = true;
     this.setVolume(volume);
 
@@ -23,6 +24,18 @@ class Music {
   setVolume(volume) {
     const steps = Math.round(1 / Music.VOLUME_STEP);
     this.track.volume = Math.min(1, Math.max(0, Math.round(volume * steps) / steps));
+  }
+
+  // Swaps to another looping song from its start, keeping the volume; does nothing if it's already playing.
+  switchTo(path) {
+    if (path === this.trackPath) return;
+    const volume = this.track.volume;
+    this.track.pause();
+    this.trackPath = path;
+    this.track = new Audio(path);
+    this.track.loop = true;
+    this.track.volume = volume;
+    this.sync();
   }
 
   unlock() {

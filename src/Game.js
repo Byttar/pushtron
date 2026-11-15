@@ -136,7 +136,10 @@ class Game {
       this.menu.hover(Layout.toScreen(pointer.x, pointer.y));
     } else if (this.state === Game.State.LOADING) {
       this.loadingElapsed += dt;
-      if (this.loadingProgress >= 1) this.state = Game.State.PLAYING;
+      if (this.loadingProgress >= 1) {
+        this.state = Game.State.PLAYING;
+        this.music.switchTo(CONFIG.audio.levelSoundtrack);
+      }
     } else if (this.isFadingIn) {
       // The level holds still until it has faded in.
       this.fadeElapsed += dt;
@@ -145,6 +148,7 @@ class Game {
       this.world.moveBubble(x, y);
       this.world.update(dt, this.input);
       if (this.world.player.justJumped) this.sfx.play("jump");
+      for (const sound of this.world.events) this.sfx.play(sound);
       this.checkOutcome();
     } else if (this.state === Game.State.DEAD) {
       // Bubbles are cleared on death, so the tiles slide back home.

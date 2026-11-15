@@ -9,6 +9,9 @@ const TOOLS = [
   { char: "B", label: "BLOCK" },
   { char: "F", label: "FIRE" },
   { char: "G", label: "GOAL" },
+  { char: "K", label: "KEY" },
+  { char: "O", label: "BUTTON" },
+  { char: "D", label: "DOOR" },
   { char: "P", label: "PLAYER" },
   { char: EMPTY, label: "ERASE" },
 ];
@@ -257,6 +260,28 @@ function drawCell(char, x, y, alpha) {
       }
       break;
     }
+    case "K":
+      noFill();
+      Phosphor.stroke(alpha, 2);
+      circle(x + s * 0.32, y + s / 2, s * 0.28);
+      line(x + s * 0.46, y + s / 2, x + s * 0.82, y + s / 2);
+      line(x + s * 0.68, y + s / 2, x + s * 0.68, y + s * 0.64);
+      line(x + s * 0.78, y + s / 2, x + s * 0.78, y + s * 0.68);
+      break;
+    case "O":
+      noFill();
+      Phosphor.stroke(alpha, 2);
+      rect(x + s * 0.2, y + s - 9, s * 0.6, 6);
+      Phosphor.stroke(170 * (alpha / 255), 1);
+      line(x + 2, y + s - 1, x + s - 2, y + s - 1);
+      break;
+    case "D":
+      noFill();
+      Phosphor.stroke(alpha, 2);
+      rect(x + 2, y + 2, s - 4, s - 4);
+      Phosphor.stroke(170 * (alpha / 255), 1);
+      for (const bar of [0.3, 0.5, 0.7]) line(x + s * bar, y + 4, x + s * bar, y + s - 4);
+      break;
     case "P":
       noFill();
       Phosphor.stroke(alpha, 2);
