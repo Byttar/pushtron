@@ -172,6 +172,7 @@ class Game {
       this.reachedGoal = this.world.goalReachedByPlayer();
       this.saveData.markCleared(this.difficulty.id, this.levelIndex);
       this.state = this.isLastLevel ? Game.State.FINISHED : Game.State.WON;
+      this.sfx.play("goal");
       this.world.clearBubbles();
     }
   }
@@ -206,8 +207,17 @@ class Game {
       this.nextLevel();
     } else if (this.state === Game.State.PLAYING && !this.isFadingIn) {
       const levelPoint = Layout.toLevel(x, y, this.level);
-      if (this.level.isInside(levelPoint.x, levelPoint.y)) this.world.startBubble(levelPoint.x, levelPoint.y);
+      if (this.level.isInside(levelPoint.x, levelPoint.y) && this.level.allowsBubbleAt(levelPoint.x, levelPoint.y)) {
+        this.world.startBubble(levelPoint.x, levelPoint.y);
+      }
     }
+  }
+
+  // True while the pointer (canvas coordinates) is over a no-bubble zone of a level being played.
+  isBubbleBlockedAt(x, y) {
+    if (this.state !== Game.State.PLAYING || this.exitPrompt.isOpen) return false;
+    const { x: levelX, y: levelY } = Layout.toLevel(x, y, this.level);
+    return this.level.isInside(levelX, levelY) && !this.level.allowsBubbleAt(levelX, levelY);
   }
 
   pointerReleased() {

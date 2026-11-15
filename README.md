@@ -25,7 +25,8 @@ The game still starts if you open `index.html` straight from disk, but browsers 
 | Action | Keys |
 | --- | --- |
 | Move | `A` / `D` or `←` / `→` |
-| Jump | `W`, `↑` or `Space` |
+| Jump | `W`, `↑` or `Space`; press again in the air to double jump |
+| Dash | Tap `A`/`←` or `D`/`→` twice quickly (has a cooldown) |
 | Bubble | Hold the left mouse button; drag to move it |
 | Restart level | `R` |
 | Back to level list | `Esc`, then confirm with `Y` / `Enter` on LEAVE (`N` / `Esc` to stay) |
@@ -86,7 +87,31 @@ Levels live in `src/levels.js`. Each one is an array of strings, one string per 
 | `P` | Player start. |
 | `.` | Empty. |
 
-A gap in the bottom row is a pit. Each difficulty shows up to 20 levels in the menu. Levels can be any size: the screen grows to fit the biggest one and smaller levels are centred.
+A gap in the bottom row is a pit.
+
+A level can also have a second layer, `zones`, laid over the map to add conditions to cells. Write the level as an object instead of an array:
+
+```js
+{
+  map: [
+    "####################",
+    "#P......B.......G..#",
+    "####################",
+  ],
+  zones: [
+    "....................",
+    "......xxxxx.........",
+    "....................",
+  ],
+},
+```
+
+| Zone character | Meaning |
+| --- | --- |
+| `x` | No-bubble zone. Clicking here doesn't start a bubble. Drawn as red stripes. |
+| `.` | No condition. |
+
+Rows line up with the map by position. Rows missing from the end of `zones`, or cells missing from the end of a row, have no condition. Each difficulty shows up to 20 levels in the menu. Levels can be any size: the screen grows to fit the biggest one and smaller levels are centred.
 
 ```js
 [

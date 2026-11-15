@@ -10,6 +10,15 @@
 //   .  empty
 // A gap in the bottom row is a pit: falling through it restarts the level.
 //
+// A level is an array of rows, or an object with a second layer of conditions laid over the map:
+//   {
+//     map:   ["#####", "#P.G#", "#####"],
+//     zones: [".....", ".xx..", "....."],
+//   }
+// Zones legend (same grid as the map; missing rows or cells have no condition):
+//   x  no-bubble zone (the bubble can't be started here; drawn in red)
+//   .  no condition
+//
 // Levels are grouped by difficulty, up to CONFIG.maxLevelsPerDifficulty (20) each.
 // Within a difficulty, each level unlocks once the previous one is cleared.
 
@@ -31,6 +40,42 @@ const DIFFICULTIES = [
         "#P...........B######",
         "########B######....#",
       ],
+      {
+        map: [
+          "###############",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#.............#",
+          "#..F...F...F..#",
+          "#..F...F...F..#",
+          "#P.F...F...F.G#",
+          "###############",
+        ],
+        zones: [
+          "...............",
+          "...............",
+          "...............",
+          "...............",
+          "...............",
+          "...............",
+          "...............",
+          "...............",
+          "...............",
+          "...............",
+          "...............",
+          ".xxxxxxxxxxxxx.",
+          "xxxxxxxxxxxxxx.",
+          ".xxxxxxxxxxxxx.",
+          "...............",
+        ],
+      },
       [
         "####################",
         "#..................#",

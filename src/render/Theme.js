@@ -1,6 +1,8 @@
-// Monochrome phosphor-terminal look. Every colour in the game is this green at some alpha.
+// Monochrome phosphor-terminal look. Every colour in the game is this green at some alpha,
+// except the red used for zones.
 const THEME = Object.freeze({
   phosphor: [66, 255, 0],
+  danger: [255, 60, 40], // the one exception to the green: cells with a restriction (zones)
   background: [8, 11, 8],
   fontPath: "assets/VT323-Regular.ttf",
   textSize: 20,

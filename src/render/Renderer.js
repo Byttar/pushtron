@@ -48,6 +48,7 @@ class Renderer {
       if (tile instanceof Fire) this.drawFire(tile, !won);
       else if (tile instanceof Block) this.drawBlock(tile);
     }
+    this.drawDust(world.dust);
     if (dead) this.drawParticles(game.deathBurst, level);
     else this.drawPlayer(world.player, !won);
     for (const key of world.keys) this.drawKey(key);
@@ -165,6 +166,7 @@ class Renderer {
     g.push();
     g.translate(origin.x, origin.y);
     this.drawGrid(g, level);
+    this.drawNoBubbleZones(g, level);
     this.drawWalls(g, level);
     g.pop();
 
@@ -193,6 +195,46 @@ class Renderer {
         if (!level.isWallOrOutside(col, row)) g.rect(col * CELL - 1, row * CELL - 1, 2, 2);
       }
     }
+  }
+
+  // Red tint with diagonal stripes, outlined only around the edge of each zone. The stripes line
+  // up across neighbouring cells, so a zone reads as one area.
+  drawNoBubbleZones(g, level) {
+    const cells = level.noBubbleCells;
+    if (cells.length === 0) return;
+    const [r, gr, b] = THEME.danger;
+    const inZone = (col, row) => level.noBubbleKeys.has(Level.key(col, row));
+
+    g.noStroke();
+    g.fill(r, gr, b, 26);
+    for (const { col, row } of cells) g.rect(col * CELL, row * CELL, CELL, CELL);
+
+    g.stroke(r, gr, b, 70);
+    g.strokeWeight(1);
+    const half = CELL / 2;
+    for (const { col, row } of cells) {
+      const x = col * CELL;
+      const y = row * CELL;
+      g.line(x, y + half, x + half, y);
+      g.line(x, y + CELL, x + CELL, y);
+      g.line(x + half, y + CELL, x + CELL, y + half);
+    }
+
+    g.drawingContext.shadowBlur = 6;
+    g.drawingContext.shadowColor = `rgba(${r}, ${gr}, ${b}, 0.75)`;
+    g.stroke(r, gr, b, 200);
+    g.strokeWeight(1.5);
+    Phosphor.dashed([4, 3], 0, g);
+    for (const { col, row } of cells) {
+      const x = col * CELL;
+      const y = row * CELL;
+      if (!inZone(col, row - 1)) g.line(x, y, x + CELL, y);
+      if (!inZone(col, row + 1)) g.line(x, y + CELL, x + CELL, y + CELL);
+      if (!inZone(col - 1, row)) g.line(x, y, x, y + CELL);
+      if (!inZone(col + 1, row)) g.line(x + CELL, y, x + CELL, y + CELL);
+    }
+    Phosphor.solid(g);
+    Phosphor.noGlow(g);
   }
 
   // Each wall cell is its own block: an outlined square with a dotted face.
@@ -381,6 +423,19 @@ class Renderer {
       rect(p.x, p.y, p.size, p.size);
     }
     ctx.restore();
+    Phosphor.glow();
+  }
+
+  // Dimmer than the death particles, and without glow, so it reads as dust.
+  drawDust(puffs) {
+    Phosphor.noGlow();
+    noStroke();
+    for (const puff of puffs) {
+      for (const p of puff.visibleParticles) {
+        Phosphor.fill(170 * p.alpha);
+        rect(p.x, p.y, p.size, p.size);
+      }
+    }
     Phosphor.glow();
   }
 

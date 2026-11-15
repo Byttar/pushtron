@@ -33,6 +33,7 @@ function draw() {
   if (!game) return;
   game.update(Math.min(deltaTime, CONFIG.maxFrameTime), { x: mouseX, y: mouseY });
   renderer.draw(game);
+  cursor(game.isBubbleBlockedAt(mouseX, mouseY) ? "not-allowed" : "crosshair");
 }
 
 function mousePressed() {

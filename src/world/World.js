@@ -10,6 +10,7 @@ class World {
     this.keyTrail = []; // collected keys, in pickup order
     this.buttons = level.buttonCells.map(({ col, row }) => new Button(col, row));
     this.events = []; // sound effect names for this frame, e.g. "key"
+    this.dust = []; // DustPuffs from jumps
     this.bubbles = [];
     this.playerCrushed = false; // set by a block that can't get past the player
     this.playerAlive = true; // once dead, blocks pass through the player's body
@@ -33,7 +34,14 @@ class World {
 
   update(dt, input) {
     this.events = [];
+    const groundY = this.player.bottom; // the jump has already lifted the player by the end of update
     this.player.update(dt, input, this);
+    if (this.player.justJumped) this.dust.push(new DustPuff(this.player.centerX, groundY, this.player.vx));
+    if (this.player.justDashed) {
+      this.dust.push(new DustPuff(this.player.centerX, this.player.bottom, this.player.vx));
+      this.events.push("dash");
+    }
+    this.updateDust(dt);
 
     for (const bubble of this.bubbles) bubble.update(dt);
     this.bubbles = this.bubbles.filter((b) => !b.isFinished);
@@ -41,6 +49,11 @@ class World {
     this.updateTiles(dt);
     this.updateKeys(dt);
     this.updateButtons();
+  }
+
+  updateDust(dt) {
+    for (const puff of this.dust) puff.update(dt);
+    this.dust = this.dust.filter((puff) => !puff.isFinished);
   }
 
   updateTiles(dt) {
@@ -92,11 +105,23 @@ class World {
     this.bubbles.push(new Bubble(x, y));
   }
 
+  // Dragging the bubble into a no-bubble zone turns it off, as if the mouse had been released.
+  // The path since the last frame is checked in small steps, so a fast drag can't skip over a thin zone.
   moveBubble(x, y) {
-    this.activeBubble?.moveTo(
-      Math.min(Math.max(x, 0), this.level.pixelWidth),
-      Math.min(Math.max(y, 0), this.level.pixelHeight)
-    );
+    const bubble = this.activeBubble;
+    if (!bubble) return;
+    const toX = Math.min(Math.max(x, 0), this.level.pixelWidth);
+    const toY = Math.min(Math.max(y, 0), this.level.pixelHeight);
+    const steps = Math.max(1, Math.ceil(Math.hypot(toX - bubble.x, toY - bubble.y) / (CELL / 4)));
+    const fromX = bubble.x;
+    const fromY = bubble.y;
+    for (let i = 1; i <= steps; i++) {
+      bubble.moveTo(fromX + ((toX - fromX) * i) / steps, fromY + ((toY - fromY) * i) / steps);
+      if (!this.level.allowsBubbleAt(bubble.x, bubble.y)) {
+        bubble.release();
+        return;
+      }
+    }
   }
 
   releaseBubbles() {

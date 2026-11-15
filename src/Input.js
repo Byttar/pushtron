@@ -6,6 +6,8 @@ class Input {
   constructor(onKeyPressed) {
     this.held = new Set();
     this.jumpPressedAt = -Infinity;
+    this.lastTap = { direction: 0, at: -Infinity }; // last left/right press, for double taps
+    this.dash = { direction: 0, at: -Infinity }; // last double tap
     this.onKeyPressed = onKeyPressed;
 
     window.addEventListener("keydown", (e) => this.handleKeyDown(e));
@@ -20,7 +22,29 @@ class Input {
     if (e.repeat) return;
 
     if (Input.JUMP_KEYS.includes(key)) this.jumpPressedAt = performance.now();
+    if (Input.LEFT_KEYS.includes(key)) this.registerTap(-1);
+    if (Input.RIGHT_KEYS.includes(key)) this.registerTap(1);
     this.onKeyPressed(key);
+  }
+
+  // Two presses toward the same side within the double-tap window request a dash.
+  registerTap(direction) {
+    const now = performance.now();
+    const { direction: lastDirection, at } = this.lastTap;
+    if (lastDirection === direction && now - at <= CONFIG.player.dash.doubleTapWindow) {
+      this.dash = { direction, at: now };
+      this.lastTap = { direction: 0, at: -Infinity }; // a third tap starts a new pair
+    } else {
+      this.lastTap = { direction, at: now };
+    }
+  }
+
+  // The direction of a dash requested within the last `windowMs`, or 0. Reading it uses it up.
+  takeDash(windowMs) {
+    if (performance.now() - this.dash.at > windowMs) return 0;
+    const { direction } = this.dash;
+    this.dash = { direction: 0, at: -Infinity };
+    return direction;
   }
 
   isAnyHeld(keys) {

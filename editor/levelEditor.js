@@ -1,25 +1,33 @@
 // Level editor: paint a map on a grid and copy it out in the format levels.js expects.
-// Uses the same legend as the game (see src/levels.js).
+// Uses the same legend as the game (see src/levels.js). Zone tools paint the second layer
+// (`zones`) without touching the map underneath.
 
 const EDITOR_CELL = 32;
 const EMPTY = ".";
 
+// `key` is the keyboard shortcut.
 const TOOLS = [
-  { char: "#", label: "WALL" },
-  { char: "B", label: "BLOCK" },
-  { char: "F", label: "FIRE" },
-  { char: "G", label: "GOAL" },
-  { char: "K", label: "KEY" },
-  { char: "O", label: "BUTTON" },
-  { char: "D", label: "DOOR" },
-  { char: "P", label: "PLAYER" },
-  { char: EMPTY, label: "ERASE" },
+  { char: "#", label: "WALL", key: "1" },
+  { char: "B", label: "BLOCK", key: "2" },
+  { char: "F", label: "FIRE", key: "3" },
+  { char: "G", label: "GOAL", key: "4" },
+  { char: "K", label: "KEY", key: "5" },
+  { char: "O", label: "BUTTON", key: "6" },
+  { char: "D", label: "DOOR", key: "7" },
+  { char: "P", label: "PLAYER", key: "8" },
+  { char: EMPTY, label: "ERASE", key: "9" },
+  { char: "x", label: "NO-BUBBLE ZONE", key: "x", layer: "zones" },
 ];
+const MAP_CHARS = TOOLS.filter((t) => !t.layer).map((t) => t.char);
+const ZONE_CHARS = TOOLS.filter((t) => t.layer === "zones").map((t) => t.char);
 
 let grid = [];
+let zones = []; // same size as grid
 let tool = "#";
-let painting = null; // the char being painted while the pointer is held, or null
+let painting = null; // { layer, char } while the pointer is held, or null
 let hoverCell = null;
+
+const toolLayer = (char) => TOOLS.find((t) => t.char === char)?.layer ?? "map";
 
 function setup() {
   const canvas = createCanvas(EDITOR_CELL, EDITOR_CELL);
@@ -30,7 +38,8 @@ function setup() {
   el.addEventListener("contextmenu", (e) => e.preventDefault());
   el.addEventListener("pointerdown", (e) => {
     el.setPointerCapture(e.pointerId);
-    painting = e.button === 2 ? EMPTY : tool;
+    // Right-click erases on the layer of the selected tool.
+    painting = { layer: toolLayer(tool), char: e.button === 2 ? EMPTY : tool };
     paintAt(e);
   });
   el.addEventListener("pointermove", (e) => {
@@ -51,12 +60,15 @@ function setup() {
 
 function newGrid(cols, rows) {
   grid = Array.from({ length: rows }, () => Array(cols).fill(EMPTY));
+  zones = Array.from({ length: rows }, () => Array(cols).fill(EMPTY));
   fitCanvas();
 }
 
 // Keeps whatever fits in the new size, anchored to the top-left corner.
 function resizeGrid(cols, rows) {
-  grid = Array.from({ length: rows }, (_, r) => Array.from({ length: cols }, (_, c) => grid[r]?.[c] ?? EMPTY));
+  const resized = (layer) => Array.from({ length: rows }, (_, r) => Array.from({ length: cols }, (_, c) => layer[r]?.[c] ?? EMPTY));
+  grid = resized(grid);
+  zones = resized(zones);
   fitCanvas();
   updateOutput();
 }
@@ -87,27 +99,50 @@ function cellAt(e) {
 
 function paintAt(e) {
   const cell = cellAt(e);
-  if (!cell || grid[cell.row][cell.col] === painting) return;
+  if (!cell) return;
+  const { layer, char } = painting;
+  const target = layer === "zones" ? zones : grid;
+  if (target[cell.row][cell.col] === char) return;
   // A level has a single player start.
-  if (painting === "P") grid = grid.map((row) => row.map((char) => (char === "P" ? EMPTY : char)));
-  grid[cell.row][cell.col] = painting;
+  if (char === "P") grid = grid.map((row) => row.map((c) => (c === "P" ? EMPTY : c)));
+  (layer === "zones" ? zones : grid)[cell.row][cell.col] = char;
   updateOutput();
 }
 
 // ---------- Text in and out ----------
 
+const hasZones = () => zones.some((row) => row.some((char) => char !== EMPTY));
+
+// A plain array of rows, or { map, zones } once any zone is painted.
 function levelText() {
-  const lines = grid.map((row) => `        "${row.join("")}",`);
-  return ["      [", ...lines, "      ],"].join("\n");
+  const rows = (layer, indent) => layer.map((row) => `${indent}"${row.join("")}",`);
+  if (!hasZones()) return ["      [", ...rows(grid, "        "), "      ],"].join("\n");
+  return [
+    "      {",
+    "        map: [",
+    ...rows(grid, "          "),
+    "        ],",
+    "        zones: [",
+    ...rows(zones, "          "),
+    "        ],",
+    "      },",
+  ].join("\n");
 }
 
-// Accepts a level copied from levels.js: every quoted string is one row.
+const quotedRows = (text) => [...text.matchAll(/["'`]([^"'`\n]*)["'`]/g)].map((m) => m[1]);
+
+// Accepts a level copied from levels.js, in either format: every quoted string is one row,
+// and rows after "zones:" belong to the zones layer.
 function parseLevel(text) {
-  const rows = [...text.matchAll(/["'`]([^"'`\n]*)["'`]/g)].map((m) => m[1]);
-  if (rows.length === 0) return null;
-  const cols = Math.max(...rows.map((r) => r.length));
+  const [mapText, zonesText = ""] = text.split(/zones\s*:/);
+  const mapRows = quotedRows(mapText);
+  if (mapRows.length === 0) return null;
+  const cols = Math.max(...mapRows.map((r) => r.length));
   if (cols === 0) return null;
-  return rows.map((r) => Array.from({ length: cols }, (_, c) => (TOOLS.some((t) => t.char === r[c]) ? r[c] : EMPTY)));
+  const zoneRows = quotedRows(zonesText);
+  const toGrid = (source, allowed) =>
+    mapRows.map((_, r) => Array.from({ length: cols }, (_, c) => (allowed.includes(source[r]?.[c]) ? source[r][c] : EMPTY)));
+  return { grid: toGrid(mapRows, MAP_CHARS), zones: toGrid(zoneRows, ZONE_CHARS) };
 }
 
 function updateOutput() {
@@ -124,9 +159,10 @@ function updateOutput() {
 
 function buildPalette() {
   const palette = document.getElementById("palette");
-  TOOLS.forEach(({ char, label }, i) => {
+  TOOLS.forEach(({ char, label, key, layer }) => {
     const button = document.createElement("button");
-    button.textContent = `${i + 1} ${char} ${label}`;
+    button.textContent = `${key.toUpperCase()} ${char} ${label}`;
+    if (layer === "zones") button.classList.add("zone");
     button.dataset.char = char;
     button.addEventListener("click", () => selectTool(char));
     palette.appendChild(button);
@@ -135,8 +171,8 @@ function buildPalette() {
 
   window.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-    const index = Number(e.key) - 1;
-    if (TOOLS[index]) selectTool(TOOLS[index].char);
+    const match = TOOLS.find((t) => t.key === e.key.toLowerCase());
+    if (match) selectTool(match.char);
   });
 }
 
@@ -178,7 +214,7 @@ function bindControls() {
       document.getElementById("warnings").textContent = "! NO ROWS FOUND IN THE TEXT";
       return;
     }
-    grid = parsed;
+    ({ grid, zones } = parsed);
     fitCanvas();
     updateOutput();
   });
@@ -196,13 +232,17 @@ function draw() {
     for (let c = 0; c <= grid[0].length; c++) rect(c * EDITOR_CELL - 1, r * EDITOR_CELL - 1, 2, 2);
   }
 
+  Phosphor.noGlow();
+  zones.forEach((row, r) => row.forEach((char, c) => char === "x" && drawNoBubbleZone(c * EDITOR_CELL, r * EDITOR_CELL, 1)));
+
   Phosphor.glow(6);
   grid.forEach((row, r) => row.forEach((char, c) => drawCell(char, c * EDITOR_CELL, r * EDITOR_CELL, 255)));
 
   if (hoverCell) {
     const x = hoverCell.col * EDITOR_CELL;
     const y = hoverCell.row * EDITOR_CELL;
-    drawCell(tool, x, y, 110);
+    if (tool === "x") drawNoBubbleZone(x, y, 0.5);
+    else drawCell(tool, x, y, 110);
     noFill();
     Phosphor.stroke(110, 1);
     Phosphor.dashed([3, 3]);
@@ -210,6 +250,24 @@ function draw() {
     Phosphor.solid();
   }
   Phosphor.noGlow();
+}
+
+// Red tint and stripes, like the game. Each cell gets its own outline here, so single cells are
+// easy to see while painting.
+function drawNoBubbleZone(x, y, strength) {
+  const [r, g, b] = THEME.danger;
+  const s = EDITOR_CELL;
+  noStroke();
+  fill(r, g, b, 40 * strength);
+  rect(x, y, s, s);
+  stroke(r, g, b, 110 * strength);
+  strokeWeight(1);
+  line(x, y + s / 2, x + s / 2, y);
+  line(x, y + s, x + s, y);
+  line(x + s / 2, y + s, x + s, y + s / 2);
+  noFill();
+  stroke(r, g, b, 200 * strength);
+  rect(x + 0.5, y + 0.5, s - 1, s - 1);
 }
 
 function drawCell(char, x, y, alpha) {

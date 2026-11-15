@@ -33,6 +33,8 @@ const CONFIG = Object.freeze({
       jump: "assets/audio/jump.mp3",
       select: "assets/audio/jump.mp3", // menu selection reuses the jump sound
       die: "assets/audio/die.mp3",
+      goal: "assets/audio/reach_goal.mp3",
+      dash: "assets/audio/jump.mp3", // placeholder until the dash gets its own sound
       key: "assets/audio/jump.mp3", // placeholder until keys get their own sound
       button: "assets/audio/jump.mp3", // placeholder until buttons get their own sound
     }),
@@ -76,6 +78,16 @@ const CONFIG = Object.freeze({
     hangGap: 2 * SPRITE_SCALE, // px between the ceiling and the body (where the raised arms are)
     coyoteTime: 90, // ms you can still jump after leaving a ledge
     jumpBuffer: 120, // ms a jump press is remembered before landing
+    airJumps: 1, // extra jumps in the air; refilled on landing or grabbing a ceiling
+    airJumpSpeed: 0.6 * WORLD_SCALE, // px per ms, a bit weaker than the ground jump
+    dash: Object.freeze({
+      doubleTapWindow: 250, // ms between the two left/right presses
+      buffer: 100, // ms a dash request waits if it can't start yet (e.g. while hanging)
+      speed: 0.6 * WORLD_SCALE, // px per ms while dashing (running is 0.3)
+      duration: 120, // ms; the dash ignores gravity and goes in a straight line
+      cooldown: 700, // ms from the end of one dash until the next can start
+    }),
+    stepHeight: 3, // px of ledge the player walks up instead of being stopped (uneven moving blocks)
     physicsStep: 8, // ms per substep, keeps fast movement from tunnelling
   }),
 
@@ -88,6 +100,7 @@ const CONFIG = Object.freeze({
   tile: Object.freeze({
     followTime: 60, // ms smoothing for tiles chasing their target position
     maxStep: 6, // max px per collision substep
+    snapDistance: 0.05, // px; closer than this to its target, a tile jumps the rest of the way
   }),
 
   block: Object.freeze({

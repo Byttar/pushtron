@@ -26,8 +26,11 @@ class Tile {
     const target = this.targetPosition(world.bubbles);
     this.target = target;
     const follow = 1 - Math.exp(-dt / CONFIG.tile.followTime);
-    const dx = (target.x - this.x) * follow;
-    const dy = (target.y - this.y) * follow;
+    // The easing never quite arrives, so snap the last bit. Otherwise neighbouring blocks end up a
+    // fraction of a pixel uneven, and the seam between them catches the player.
+    const snap = (from, to) => (Math.abs(to - from) < CONFIG.tile.snapDistance ? to - from : (to - from) * follow);
+    const dx = snap(this.x, target.x);
+    const dy = snap(this.y, target.y);
 
     const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / CONFIG.tile.maxStep));
     for (let i = 0; i < steps; i++) {

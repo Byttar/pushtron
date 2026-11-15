@@ -3,7 +3,7 @@
 class Layout {
   static screenRect() {
     const { margin, minScreenWidth, minScreenHeight } = CONFIG.layout;
-    const maps = DIFFICULTIES.flatMap((difficulty) => difficulty.levels);
+    const maps = DIFFICULTIES.flatMap((difficulty) => difficulty.levels.map(Level.mapOf));
     const w = Math.max(minScreenWidth, ...maps.map((map) => Level.widthOf(map) * CELL));
     const h = Math.max(minScreenHeight, ...maps.map((map) => map.length * CELL));
     return { x: margin, y: margin, w, h };

@@ -1,9 +1,14 @@
 // The layout of a level, parsed from a text map (see levels.js for the legend).
 // Everything is static except whether the doors are open.
+//
+// A level is either just the map (an array of rows) or { map, zones }, where `zones` is a second
+// grid laid over the map that adds conditions to cells (see ZONE_TYPES).
 class Level {
   static TILE_TYPES = { B: "block", F: "fire", G: "goal" };
+  static ZONE_TYPES = { x: "noBubble" };
 
-  constructor(map) {
+  constructor(entry) {
+    const map = Level.mapOf(entry);
     this.rows = map.length;
     this.cols = Level.widthOf(map);
     this.wallCells = [];
@@ -15,10 +20,14 @@ class Level {
     this.buttonCells = [];
     this.tileSpawns = [];
     this.spawn = null;
+    this.noBubbleCells = [];
+    this.noBubbleKeys = new Set();
 
+    const zones = Level.zonesOf(entry);
     for (let row = 0; row < this.rows; row++) {
       for (let col = 0; col < this.cols; col++) {
         this.parseCell(map[row][col], col, row);
+        this.parseZone(zones[row]?.[col], col, row);
       }
     }
 
@@ -52,6 +61,27 @@ class Level {
     } else if (char === "P") {
       this.spawn = { col, row };
     }
+  }
+
+  parseZone(char, col, row) {
+    if (Level.ZONE_TYPES[char] === "noBubble") {
+      this.noBubbleCells.push({ col, row });
+      this.noBubbleKeys.add(Level.key(col, row));
+    }
+  }
+
+  static mapOf(entry) {
+    return Array.isArray(entry) ? entry : entry.map;
+  }
+
+  // Missing rows or cells in the zones grid have no condition.
+  static zonesOf(entry) {
+    return Array.isArray(entry) ? [] : entry.zones ?? [];
+  }
+
+  // `x` and `y` are in level coordinates.
+  allowsBubbleAt(x, y) {
+    return !this.noBubbleKeys.has(Level.key(Math.floor(x / CELL), Math.floor(y / CELL)));
   }
 
   // Rows may differ in length; missing cells at the end of a row are empty.
