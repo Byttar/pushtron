@@ -18,6 +18,8 @@ class Level {
     this.wallKeys = new Set();
     this.doorCells = [];
     this.doorKeys = new Set();
+    this.spikeCells = []; // immovable hazard blocks
+    this.spikeKeys = new Set();
     this.doorsOpen = false;
     this.keyCells = [];
     this.buttonCells = [];
@@ -64,6 +66,9 @@ class Level {
     } else if (char === "D") {
       this.doorCells.push({ col, row });
       this.doorKeys.add(Level.key(col, row));
+    } else if (char === "S") {
+      this.spikeCells.push({ col, row });
+      this.spikeKeys.add(Level.key(col, row));
     } else if (char === "K") {
       this.keyCells.push({ col, row });
     } else if (char === "L") {
@@ -149,6 +154,10 @@ class Level {
   }
 
   wallRectsOverlapping(rect) {
+    return this.barrierRectsOverlapping(rect, true);
+  }
+
+  spikeRectsOverlapping(rect) {
     const rects = [];
     const col0 = Math.floor(rect.x / CELL);
     const row0 = Math.floor(rect.y / CELL);
@@ -156,9 +165,45 @@ class Level {
     const row1 = Math.floor((rect.y + rect.h - 0.001) / CELL);
     for (let row = row0; row <= row1; row++) {
       for (let col = col0; col <= col1; col++) {
-        if (this.isWall(col, row)) rects.push({ x: col * CELL, y: row * CELL, w: CELL, h: CELL });
+        if (this.spikeKeys.has(Level.key(col, row))) rects.push({ x: col * CELL, y: row * CELL, w: CELL, h: CELL });
       }
     }
     return rects;
+  }
+
+  // Closed doors and the area outside the map. `walls` adds the # cells; blocks leave those out
+  // so a push can carry them through a wall.
+  barrierRectsOverlapping(rect, walls) {
+    const rects = [];
+    const col0 = Math.floor(rect.x / CELL);
+    const row0 = Math.floor(rect.y / CELL);
+    const col1 = Math.floor((rect.x + rect.w - 0.001) / CELL);
+    const row1 = Math.floor((rect.y + rect.h - 0.001) / CELL);
+    for (let row = row0; row <= row1; row++) {
+      for (let col = col0; col <= col1; col++) {
+        if (row >= this.rows) continue;
+        const outside = col < 0 || row < 0 || col >= this.cols;
+        const key = Level.key(col, row);
+        const wall = walls && !outside && this.wallKeys.has(key);
+        const door = !outside && !this.doorsOpen && this.doorKeys.has(key);
+        if (outside || wall || door) rects.push({ x: col * CELL, y: row * CELL, w: CELL, h: CELL });
+      }
+    }
+    return rects;
+  }
+
+  // True when `rect` covers part of a # cell. Outside the map and closed doors do not count.
+  overlapsWallTile(rect) {
+    const col0 = Math.floor(rect.x / CELL);
+    const row0 = Math.floor(rect.y / CELL);
+    const col1 = Math.floor((rect.x + rect.w - 0.001) / CELL);
+    const row1 = Math.floor((rect.y + rect.h - 0.001) / CELL);
+    for (let row = row0; row <= row1; row++) {
+      for (let col = col0; col <= col1; col++) {
+        if (row < 0 || col < 0 || col >= this.cols || row >= this.rows) continue;
+        if (this.wallKeys.has(Level.key(col, row))) return true;
+      }
+    }
+    return false;
   }
 }

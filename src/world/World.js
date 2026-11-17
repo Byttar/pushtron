@@ -1,6 +1,7 @@
 // Everything alive in the current level: player, tiles, keys, buttons and bubbles.
 class World {
   static TILE_CLASSES = { block: Block, fire: Fire, goal: Goal };
+  static IGNORE_BLOCKS = "blocks"; // passed to solidsOverlapping to test walls only
 
   constructor(level) {
     this.level = level;
@@ -39,10 +40,6 @@ class World {
     const groundY = this.player.bottom; // the jump has already lifted the player by the end of update
     this.player.update(dt, input, this);
     if (this.player.justJumped) this.dust.push(new DustPuff(this.player.centerX, groundY, this.player.vx));
-    if (this.player.justDashed) {
-      this.dust.push(new DustPuff(this.player.centerX, this.player.bottom, this.player.vx));
-      this.events.push("dash");
-    }
     this.updateDust(dt);
 
     for (const bubble of this.bubbles) bubble.update(dt);
@@ -60,6 +57,7 @@ class World {
 
   updateTiles(dt) {
     for (const tile of this.tiles) tile.update(dt, this);
+    this.separatePlayerFromBlocks();
   }
 
   updateKeys(dt) {
@@ -94,12 +92,44 @@ class World {
   }
 
   // Walls and blocks overlapping `rect`, as rectangles.
+  // `ignore` is one block to skip, or World.IGNORE_BLOCKS to skip every block (walls still count).
   solidsOverlapping(rect, ignore) {
     const solids = this.level.wallRectsOverlapping(rect);
+    solids.push(...this.level.spikeRectsOverlapping(rect));
+    if (ignore === World.IGNORE_BLOCKS) return solids;
     for (const block of this.blocks) {
       if (block !== ignore && Rect.overlaps(rect, block.bounds)) solids.push(block.bounds);
     }
     return solids;
+  }
+
+  // A block can come to rest overlapping another block. Push the player out of that overlap
+  // so they aren't left inside a block the bubble shoved through them.
+  separatePlayerFromBlocks() {
+    const { player } = this;
+    if (!this.playerAlive) return;
+    for (let pass = 0; pass < this.blocks.length + 1; pass++) {
+      const block = this.blocks.find((b) => Rect.overlaps(player.bounds, b.bounds));
+      if (!block) return;
+      const left = player.x + player.width - block.x;
+      const right = block.x + CELL - player.x;
+      const up = player.y + player.height - block.y;
+      const down = block.y + CELL - player.y;
+      const exits = [
+        { x: player.x - left, y: player.y, pen: left },
+        { x: player.x + right, y: player.y, pen: right },
+        { x: player.x, y: player.y - up, pen: up },
+        { x: player.x, y: player.y + down, pen: down },
+      ].sort((a, b) => a.pen - b.pen);
+      const free = exits.find((exit) => {
+        const next = { x: exit.x, y: exit.y, w: player.width, h: player.height };
+        if (this.level.wallRectsOverlapping(next).length > 0) return false;
+        return !this.blocks.some((b) => Rect.overlaps(next, b.bounds));
+      });
+      if (!free) return;
+      player.x = free.x;
+      player.y = free.y;
+    }
   }
 
   // The level's hint shows until the player's first input of this attempt.
@@ -145,6 +175,12 @@ class World {
 
   isPlayerBurned() {
     return this.fires.some((fire) => fire.burns(this.player.bounds));
+  }
+
+  // Flush contact counts: the player is stopped against the spike, so the bodies only touch.
+  isPlayerSpiked() {
+    const { x, y, w, h } = this.player.bounds;
+    return this.level.spikeRectsOverlapping({ x: x - 1, y: y - 1, w: w + 2, h: h + 2 }).length > 0;
   }
 
   hasPlayerFallen() {

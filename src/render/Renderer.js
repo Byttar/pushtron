@@ -243,6 +243,7 @@ class Renderer {
     this.drawGrid(g, level);
     this.drawNoBubbleZones(g, level);
     this.drawWalls(g, level);
+    this.drawSpikes(g, level);
     g.pop();
 
     this.staticLayer = g;
@@ -267,7 +268,7 @@ class Renderer {
     Phosphor.fill(45, g);
     for (let row = 0; row <= level.rows; row++) {
       for (let col = 0; col <= level.cols; col++) {
-        if (!level.isWallOrOutside(col, row)) g.rect(col * CELL - 1, row * CELL - 1, 2, 2);
+        if (!level.isWallOrOutside(col, row) && !level.spikeKeys.has(Level.key(col, row))) g.rect(col * CELL - 1, row * CELL - 1, 2, 2);
       }
     }
   }
@@ -490,6 +491,27 @@ class Renderer {
       if (tile.isAwayFromHome) rect(tile.homeX + 3, tile.homeY + 3, CELL - 6, CELL - 6);
     }
     Phosphor.solid();
+  }
+
+  // Fixed hazard: a core with a spike on each side. Drawn into the static layer.
+  drawSpikes(g, level) {
+    if (level.spikeCells.length === 0) return;
+    Phosphor.glow(8, g);
+    g.noStroke();
+    for (const { col, row } of level.spikeCells) {
+      const x = col * CELL;
+      const y = row * CELL;
+      const midX = x + CELL / 2;
+      const midY = y + CELL / 2;
+      Phosphor.fill(50, g);
+      g.rect(x + 7, y + 7, CELL - 14, CELL - 14);
+      Phosphor.fill(230, g);
+      g.triangle(midX, y + 1, x + 8, y + 9, x + CELL - 8, y + 9);
+      g.triangle(midX, y + CELL - 1, x + 8, y + CELL - 9, x + CELL - 8, y + CELL - 9);
+      g.triangle(x + 1, midY, x + 9, y + 8, x + 9, y + CELL - 8);
+      g.triangle(x + CELL - 1, midY, x + CELL - 9, y + 8, x + CELL - 9, y + CELL - 8);
+    }
+    Phosphor.noGlow(g);
   }
 
   // Outlined crate with a 3x3 grid of keys, like the keyboard in the reference art.

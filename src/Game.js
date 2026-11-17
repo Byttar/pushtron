@@ -195,6 +195,8 @@ class Game {
       this.die("crush");
     } else if (this.world.isPlayerBurned()) {
       this.die("fire");
+    } else if (this.world.isPlayerSpiked()) {
+      this.die("spike");
     } else if (this.world.hasPlayerFallen()) {
       this.die("fall");
     } else if (this.world.hasPlayerReachedGoal()) {

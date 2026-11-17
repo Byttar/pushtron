@@ -42,16 +42,37 @@ class Tile {
   moveX(amount, world) {
     if (amount === 0) return;
     this.x += amount;
-    for (const wall of world.level.wallRectsOverlapping(this.bounds)) {
-      this.x = amount > 0 ? Math.min(this.x, wall.x - CELL) : Math.max(this.x, wall.x + wall.w);
-    }
+    this.resolveX(amount, world.level.wallRectsOverlapping(this.bounds));
   }
 
   moveY(amount, world) {
     if (amount === 0) return;
     this.y += amount;
-    for (const wall of world.level.wallRectsOverlapping(this.bounds)) {
+    this.resolveY(amount, world.level.wallRectsOverlapping(this.bounds));
+  }
+
+  resolveX(amount, rects) {
+    for (const wall of rects) {
+      this.x = amount > 0 ? Math.min(this.x, wall.x - CELL) : Math.max(this.x, wall.x + wall.w);
+    }
+  }
+
+  resolveY(amount, rects) {
+    for (const wall of rects) {
       this.y = amount > 0 ? Math.min(this.y, wall.y - CELL) : Math.max(this.y, wall.y + wall.h);
     }
+  }
+
+  // # walls are not solid. Doors and the outside of the map still are.
+  slideX(amount, world) {
+    this.x += amount;
+    this.resolveX(amount, world.level.barrierRectsOverlapping(this.bounds, false));
+    this.resolveX(amount, world.level.spikeRectsOverlapping(this.bounds));
+  }
+
+  slideY(amount, world) {
+    this.y += amount;
+    this.resolveY(amount, world.level.barrierRectsOverlapping(this.bounds, false));
+    this.resolveY(amount, world.level.spikeRectsOverlapping(this.bounds));
   }
 }

@@ -10,6 +10,7 @@ const TOOLS = [
   { char: "#", label: "WALL", key: "1" },
   { char: "B", label: "BLOCK", key: "2" },
   { char: "F", label: "FIRE", key: "3" },
+  { char: "S", label: "SPIKE", key: "s" },
   { char: "G", label: "GOAL", key: "4" },
   { char: "K", label: "KEY", key: "5" },
   { char: "O", label: "BUTTON", key: "6" },
@@ -309,6 +310,17 @@ function drawCell(char, x, y, alpha) {
       const start = (s - (key * 3 + gap * 2)) / 2;
       Phosphor.stroke(170 * (alpha / 255), 1);
       for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) rect(x + start + i * (key + gap), y + start + j * (key + gap), key, key);
+      break;
+    }
+    case "S": {
+      noStroke();
+      Phosphor.fill(50 * (alpha / 255));
+      rect(x + s * 0.28, y + s * 0.28, s * 0.44, s * 0.44);
+      Phosphor.fill(alpha);
+      triangle(x + s / 2, y + 2, x + s * 0.3, y + s * 0.32, x + s * 0.7, y + s * 0.32);
+      triangle(x + s / 2, y + s - 2, x + s * 0.3, y + s * 0.68, x + s * 0.7, y + s * 0.68);
+      triangle(x + 2, y + s / 2, x + s * 0.32, y + s * 0.3, x + s * 0.32, y + s * 0.7);
+      triangle(x + s - 2, y + s / 2, x + s * 0.68, y + s * 0.3, x + s * 0.68, y + s * 0.7);
       break;
     }
     case "F": {

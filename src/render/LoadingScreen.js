@@ -16,6 +16,7 @@ class LoadingScreen {
     const steps = ["READING MAP", `BUILDING ${plural(level.wallCells.length, "WALL")}`];
     if (blocks) steps.push(`PLACING ${plural(blocks, "BLOCK")}`);
     if (fires) steps.push(`IGNITING ${plural(fires, "FIRE")}`);
+    if (level.spikeCells.length) steps.push(`SETTING ${plural(level.spikeCells.length, "SPIKE")}`);
     if (level.keyCells.length) steps.push(`HIDING ${plural(level.keyCells.length, "KEY")}`);
     if (level.doorCells.length) steps.push(`LOCKING ${plural(level.doorCells.length, "DOOR")}`);
     if (level.buttonCells.length) steps.push(`WIRING ${plural(level.buttonCells.length, "BUTTON")}`);

@@ -37,7 +37,6 @@ const CONFIG = Object.freeze({
       die: "assets/audio/die.mp3",
       goal: "assets/audio/reach_goal.mp3",
       speaking: "assets/audio/speaking.mp3", // loops while dialog text is being typed
-      dash: "assets/audio/jump.mp3", // placeholder until the dash gets its own sound
       key: "assets/audio/jump.mp3", // placeholder until keys get their own sound
       button: "assets/audio/jump.mp3", // placeholder until buttons get their own sound
     }),
@@ -86,14 +85,7 @@ const CONFIG = Object.freeze({
     coyoteTime: 90, // ms you can still jump after leaving a ledge
     jumpBuffer: 120, // ms a jump press is remembered before landing
     airJumps: 1, // extra jumps in the air; refilled on landing or grabbing a ceiling
-    airJumpSpeed: 0.6 * WORLD_SCALE, // px per ms, a bit weaker than the ground jump
-    dash: Object.freeze({
-      doubleTapWindow: 250, // ms between the two left/right presses
-      buffer: 100, // ms a dash request waits if it can't start yet (e.g. while hanging)
-      speed: 0.75 * WORLD_SCALE, // px per ms while dashing (running is 0.3)
-      duration: 140, // ms of dash speed; gravity still applies the whole time
-      cooldown: 700, // ms from the end of one dash until the next can start
-    }),
+    airJumpSpeed: 0.28 * WORLD_SCALE, // px per ms, a short hop of under half a cell
     stepHeight: 3, // px of ledge the player walks up instead of being stopped (uneven moving blocks)
     physicsStep: 8, // ms per substep, keeps fast movement from tunnelling
   }),

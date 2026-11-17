@@ -12,13 +12,6 @@ class Player {
     this.direction = 0;
     this.facing = 1;
     this.airJumpsLeft = CONFIG.player.airJumps;
-    this.dashTimer = 0; // ms left in the current dash; 0 when not dashing
-    this.dashDirection = 0;
-    this.dashCooldown = 0; // ms until the next dash can start
-  }
-
-  get dashing() {
-    return this.dashTimer > 0;
   }
 
   // Places the player standing on the floor of the given cell, centred horizontally.
@@ -66,8 +59,6 @@ class Player {
     this.direction = direction;
     if (direction !== 0) this.facing = direction;
     this.justJumped = false;
-    this.justDashed = false;
-    if (!this.dashing) this.dashCooldown = Math.max(0, this.dashCooldown - dt);
 
     if (this.hanging) {
       this.airJumpsLeft = cfg.airJumps;
@@ -78,7 +69,6 @@ class Player {
     if (this.onGround) this.airJumpsLeft = cfg.airJumps;
     this.coyoteTimer = this.onGround ? cfg.coyoteTime : this.coyoteTimer - dt;
     if (input.hasBufferedJump(cfg.jumpBuffer)) this.tryJump(input);
-    this.tryDash(input);
 
     const steps = Math.ceil(dt / cfg.physicsStep);
     const h = dt / steps;
@@ -87,18 +77,13 @@ class Player {
     const accel = this.horizontalAccel(direction);
     this.onGround = false;
     for (let i = 0; i < steps; i++) {
-      if (this.dashing) this.updateDash(h);
-      else this.vx = Player.approach(this.vx, direction * cfg.runSpeed, accel * h);
+      this.vx = Player.approach(this.vx, direction * cfg.runSpeed, accel * h);
 
-      // Gravity keeps pulling during a dash too; the dash only takes over horizontal speed.
       let gravity = cfg.gravity;
       if (this.vy < 0 && !input.jumpHeld) gravity *= cfg.lowJumpGravity;
       this.vy = Math.min(this.vy + gravity * h, cfg.maxFallSpeed);
 
-      if (this.moveX(this.vx * h, world)) {
-        this.vx = 0;
-        this.dashTimer = 0; // running into a wall ends the dash
-      }
+      if (this.moveX(this.vx * h, world)) this.vx = 0;
       const rising = this.vy < 0;
       if (this.moveY(this.vy * h, world)) {
         this.vy = 0;
@@ -107,7 +92,7 @@ class Player {
     }
   }
 
-  // ---------- Jumping and dashing ----------
+  // ---------- Jumping ----------
 
   // A ground jump (also just after leaving a ledge), or else one of the air jumps.
   tryJump(input) {
@@ -117,34 +102,12 @@ class Player {
     } else if (this.airJumpsLeft > 0) {
       this.airJumpsLeft--;
       this.vy = -cfg.airJumpSpeed;
-      this.dashTimer = 0; // jumping out of a dash cancels it
     } else {
       return; // stays buffered, so a press just before landing still jumps
     }
     this.coyoteTimer = 0;
     this.justJumped = true;
     input.consumeJump();
-  }
-
-  tryDash(input) {
-    const { dash } = CONFIG.player;
-    if (this.dashing || this.dashCooldown > 0) return;
-    const direction = input.takeDash(dash.buffer);
-    if (direction === 0) return;
-    this.dashDirection = direction;
-    this.facing = direction;
-    this.dashTimer = dash.duration;
-    this.dashCooldown = dash.cooldown;
-    this.justDashed = true;
-    // An air dash uses up the double jump until the player lands or grabs a ceiling again.
-    if (!this.onGround) this.airJumpsLeft = 0;
-  }
-
-  // A horizontal burst. Afterwards the player keeps running at normal top speed.
-  updateDash(h) {
-    const { runSpeed, dash } = CONFIG.player;
-    this.dashTimer = Math.max(0, this.dashTimer - h);
-    this.vx = this.dashDirection * (this.dashing ? dash.speed : runSpeed);
   }
 
   // ---------- Hanging from a ceiling ----------

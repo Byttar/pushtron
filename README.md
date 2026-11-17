@@ -26,7 +26,6 @@ The game still starts if you open `index.html` straight from disk, but browsers 
 | --- | --- |
 | Move | `A` / `D` or `←` / `→` |
 | Jump | `W`, `↑` or `Space`; press again in the air to double jump |
-| Dash | Tap `A`/`←` or `D`/`→` twice quickly (has a cooldown) |
 | Bubble | Hold the left mouse button; drag to move it |
 | Restart level | `R` |
 | Back to level list | `Esc`, then confirm with `Y` / `Enter` on LEAVE (`N` / `Esc` to stay) |
@@ -80,6 +79,7 @@ Levels live in `src/levels.js`. Each one is an array of strings, one string per 
 | `#` | Wall. Can't be moved. |
 | `B` | Block. Pushed by the bubble, and you can stand on it. |
 | `F` | Fire. Pushed by the bubble, and touching it kills you. |
+| `S` | Spike block. Can't be moved. Solid, and touching it kills you. |
 | `G` | Goal. Reach it to win. The bubble can push it too. |
 | `K` | Key. Collect every key before the goal opens. Collected keys follow you. |
 | `O` | Button. Pressed for good by you or a block, and opens every door. |
